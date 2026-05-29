@@ -1,6 +1,13 @@
 import os
 import sys
 import time
+
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+except AttributeError:
+    pass
+
 import tkinter as tk
 from tkinter import ttk
 import threading

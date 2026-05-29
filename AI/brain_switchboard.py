@@ -5,6 +5,12 @@ import subprocess
 import sys
 import threading
 
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+except AttributeError:
+    pass
+
 # Dynamic path configuration
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 GENRE_DIR = os.path.dirname(BASE_DIR)

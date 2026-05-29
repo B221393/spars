@@ -164,47 +164,56 @@ class SpireBody:
 
     def confirm_and_push(self, target_coord, label, eye_ref):
         """
-        [初速のシステム]
-        1. 実行前にターゲットを視認(OCR等)で再確認し、確信を得る。
-        2. 物理的な実行（高出力プッシュ）。
-        3. 実行後の画面変異をミリ秒単位で検証。
-        戻り値: (success: bool, diagnostic_info: str)
+        [初速のシステム - 改良版]
+        1. 実行前にターゲットを視認(OCR等)で確認。
+        2. 物理的な実行（周辺座標への自動シフト・リトライ付き）。
+        3. 実行後の画面変異を検証し、変化があれば成功、なければ少しずらして再試行。
         """
         self.log(f"🚀 [Initial Velocity] 始動準備: '{label}' をターゲットに設定。")
         self.wait_for_active_window()
         
-        # 1. 実行前の再視認 (Pre-flight check)
-        before_frame = eye_ref.grab_screen()
-        if before_frame is None:
-            return False, "画面の取得に失敗しました（キャプチャ不可）。"
-        
-        # 2. 高出力実行 (High-energy Push)
         tx, ty = target_coord
-        self.driver.bezier_move(tx, ty)
-        time.sleep(0.1)
-        self.driver.hardware_click(tx, ty)
-        self.log(f"⚡ [Push] 物理入力を送信しました。座標: ({tx}, {ty})")
         
-        # 3. 変化の検証 (Verification of displacement)
-        # 0.2秒後、0.6秒後の2段階で変化を追跡
-        success = False
+        # Shift candidates to try if screen doesn't change
+        shifts = [
+            (0, 0),
+            (35, 0),
+            (-35, 0),
+            (0, 25),
+            (0, -25),
+            (45, 20),
+            (-45, -20)
+        ]
+        
         reason = "画面に変異が見られませんでした（静止状態）。"
         
-        before_small = self._capture_small() # 直前の状態
-        
-        for wait_time in [0.2, 0.6]:
-            time.sleep(wait_time)
-            after_small = self._capture_small()
-            if after_small is not None:
-                diff = self._pixel_diff(before_small, after_small)
-                if diff > 3.0: # 明確な変異を検知
-                    self.log(f"✅ [Shosoku] 初速を検知！ 画面変異係数: {diff:.2f}")
-                    success = True
-                    reason = "None"
-                    break
-        
-        if not success:
-            self.log(f"⚠️ [Bottleneck] '{label}' を押しましたが、画面が動きません。")
-            # ここでさらに原因を深掘りするための情報を収集可能
+        for i, (dx, dy) in enumerate(shifts):
+            cx = tx + dx
+            cy = ty + dy
             
-        return success, reason
+            # 1. 実行前のキャプチャ (Pre-flight check)
+            before_small = self._capture_small()
+            if before_small is None:
+                return False, "画面の取得に失敗しました（キャプチャ不可）。"
+                
+            # 2. 高出力実行 (High-energy Push)
+            self.driver.bezier_move(cx, cy)
+            time.sleep(random.uniform(0.08, 0.15))
+            self.driver.hardware_click(cx, cy)
+            self.log(f"⚡ [Push] 物理入力を送信しました。座標: ({cx}, {cy})" + (f" [シフト #{i}: ({dx}, {dy})]" if i > 0 else ""))
+            
+            # 3. 変化の検証 (Verification of displacement)
+            # 0.2秒後、0.5秒後の2段階で変化を追跡
+            for wait_time in [0.2, 0.5]:
+                time.sleep(wait_time)
+                after_small = self._capture_small()
+                if after_small is not None:
+                    diff = self._pixel_diff(before_small, after_small)
+                    if diff > 3.0: # 明確な変異を検知
+                        self.log(f"✅ [Shosoku] 初速を検知！ 画面変異係数: {diff:.2f}")
+                        return True, "None"
+                        
+            self.log(f"⚠️ [Push Failed] 変化なし。次の座標を試します...")
+            time.sleep(0.2)
+            
+        return False, reason

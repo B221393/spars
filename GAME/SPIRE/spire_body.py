@@ -58,6 +58,15 @@ class SpireBody:
         except Exception:
             return 0.0
 
+    def click_position(self, coord, label="Coordinate"):
+        """Simple physical click at targeted coordinates."""
+        self.wait_for_active_window()
+        x, y = coord
+        self.log(f"Clicking {label} at ({x}, {y})")
+        self.driver.bezier_move(x, y)
+        time.sleep(random.uniform(0.05, 0.12))
+        self.driver.hardware_click(x, y)
+
     def click_and_verify(self, coord, label="Target", max_shifts=5, shift_px=15, change_threshold=2.5):
         """
         クリック → 0.1秒後に画面差分確認 → 変化なし なら少しずらして再試行。

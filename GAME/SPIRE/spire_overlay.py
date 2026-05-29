@@ -71,6 +71,16 @@ class AppleGoogleHUDWidget:
         
         # Start state polling loop
         self.update_status_data()
+        
+        # Auto-trigger SPIRE brain if requested
+        if len(sys.argv) > 1 and sys.argv[1].upper() == "AUTO_SPIRE":
+            self.root.after(1000, self.auto_start_spire)
+
+    def auto_start_spire(self):
+        if self.switchboard:
+            self.switchboard.set_active_brain("SPIRE")
+            self.switchboard.trigger_active_brain()
+            self.show_feedback("Auto-Started SPIRE Brain")
 
     def build_ui(self):
         # Create canvas for transparent rounded window drawing

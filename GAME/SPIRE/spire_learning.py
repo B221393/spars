@@ -205,8 +205,30 @@ class SpireLearning:
         try:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
+            if path == DB_PATH:
+                self.save_card_csv()
         except Exception as e:
             print(f"⚠️ Failed to save JSON to {path}: {e}")
+
+    def save_card_csv(self):
+        csv_path = os.path.join(SAVES_DIR, "card_db.csv")
+        try:
+            import csv
+            with open(csv_path, "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["Hash", "Name", "Category", "Score", "Times Played", "Times Selected"])
+                for chash, info in self.card_db.items():
+                    writer.writerow([
+                        chash,
+                        info.get("name", ""),
+                        info.get("category", "UNKNOWN"),
+                        info.get("score", 0.0),
+                        info.get("times_played", 0),
+                        info.get("times_selected", 0)
+                    ])
+            print(f"📊 [CSV Export] Exported card database to {csv_path}")
+        except Exception as e:
+            print(f"⚠️ Failed to save CSV to {csv_path}: {e}")
 
     # ────────────────────────────────────────────────────────────
     # イベント辞書（王道原理：推論の記憶と再利用）
@@ -254,6 +276,17 @@ class SpireLearning:
         
         self.save_json(EVENT_DB_PATH, self.event_db)
         self.generate_html_dictionary()
+
+    def record_event_failure(self, screen_hash, text, penalty=-500.0):
+        """
+        If a click had no response (no screen change), give a negative reward (minus)
+        to that state-action pair in the database.
+        """
+        if screen_hash in self.event_db:
+            self.event_db[screen_hash]["score"] += penalty
+            current_score = self.event_db[screen_hash]["score"]
+            print(f"💔 [Penalty] 画面変異に失敗！ '{text}' にペナルティ {penalty} (Total: {current_score}) を与えました。")
+            self.save_json(EVENT_DB_PATH, self.event_db)
 
     def generate_html_dictionary(self):
         """イベント辞書を視覚化する軽量HTMLを生成"""

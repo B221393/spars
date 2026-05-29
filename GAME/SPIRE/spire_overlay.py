@@ -240,6 +240,57 @@ class AppleGoogleHUDWidget:
             new_name = parts[1].upper()
             self.create_new_genre_folder(new_name)
             
+        elif main_cmd == "click":
+            if len(parts) >= 3:
+                try:
+                    tx = int(parts[1])
+                    ty = int(parts[2])
+                    self.write_puppet_hint(manual_click=[tx, ty])
+                    self.show_feedback(f"Sent Manual Click to ({tx}, {ty})")
+                except ValueError:
+                    self.show_feedback("Error: invalid coordinates", is_error=True)
+            else:
+                self.show_feedback("Error: click <x> <y>", is_error=True)
+                
+        elif main_cmd == "click_pct":
+            if len(parts) >= 3:
+                try:
+                    xp = float(parts[1])
+                    yp = float(parts[2])
+                    self.write_puppet_hint(manual_click_pct=[xp, yp])
+                    self.show_feedback(f"Sent Click Pct to ({xp}, {yp})")
+                except ValueError:
+                    self.show_feedback("Error: invalid floats", is_error=True)
+            else:
+                self.show_feedback("Error: click_pct <xp> <yp>", is_error=True)
+                
+        elif main_cmd in ["right", "left", "up", "down", "clear", "reset"]:
+            hints_path = os.path.join(BASE_DIR, "saves", "puppet_hints.json")
+            hints = {"dx": 0, "dy": 0, "manual_click": None, "manual_click_pct": None}
+            if os.path.exists(hints_path):
+                try:
+                    with open(hints_path, "r", encoding="utf-8") as f:
+                        hints = json.load(f)
+                except: pass
+            
+            step = 60
+            if main_cmd == "right":
+                hints["dx"] = hints.get("dx", 0) + step
+            elif main_cmd == "left":
+                hints["dx"] = hints.get("dx", 0) - step
+            elif main_cmd == "down":
+                hints["dy"] = hints.get("dy", 0) + step
+            elif main_cmd == "up":
+                hints["dy"] = hints.get("dy", 0) - step
+            elif main_cmd in ["clear", "reset"]:
+                hints["dx"] = 0
+                hints["dy"] = 0
+                
+            os.makedirs(os.path.dirname(hints_path), exist_ok=True)
+            with open(hints_path, "w", encoding="utf-8") as f:
+                json.dump(hints, f)
+            self.show_feedback(f"Nudge: (dx={hints['dx']}, dy={hints['dy']})")
+
         elif main_cmd == "exit":
             self.root.destroy()
             
@@ -251,6 +302,25 @@ class AppleGoogleHUDWidget:
                 self.show_feedback(f"Switched to {brain_check}")
             else:
                 self.show_feedback("Command unrecognized", is_error=True)
+
+    def write_puppet_hint(self, dx=None, dy=None, manual_click=None, manual_click_pct=None):
+        hints_path = os.path.join(BASE_DIR, "saves", "puppet_hints.json")
+        os.makedirs(os.path.dirname(hints_path), exist_ok=True)
+        hints = {"dx": 0, "dy": 0, "manual_click": None, "manual_click_pct": None}
+        if os.path.exists(hints_path):
+            try:
+                with open(hints_path, "r", encoding="utf-8") as f:
+                    hints = json.load(f)
+            except: pass
+        if dx is not None: hints["dx"] = dx
+        if dy is not None: hints["dy"] = dy
+        if manual_click is not None: hints["manual_click"] = manual_click
+        if manual_click_pct is not None: hints["manual_click_pct"] = manual_click_pct
+        try:
+            with open(hints_path, "w", encoding="utf-8") as f:
+                json.dump(hints, f)
+        except Exception as e:
+            print(f"Error writing hints: {e}")
 
     def create_new_genre_folder(self, name):
         """Creates a new task folder under GAME/ and generates a boilerplate python runner."""

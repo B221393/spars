@@ -223,13 +223,13 @@ Do not include any explanation, markdown formatting, or punctuation. Output ONLY
         
         detected_state = "UNKNOWN"
         # Check text anchors for instant state matching
-        if any(kw in full_text for kw in ["シングル", "singleplayer", "マルチプレイ", "multiplayer", "プレイ", "通常", "本日の挑戦", "カスタム", "standard", "daily challenge", "custom"]):
-            if any(name in full_text for name in ["アイアンクラッド", "アイアンクラド", "サイレント", "ディフェクト", "ウォッチャー", "ネクロバインダー", "ironclad", "silent", "defect", "watcher", "necrobinder", "デイリーチャレンジ"]):
-                detected_state = "CHARACTER_SELECT"
-            else:
-                detected_state = "MAIN_MENU"
-        elif any(kw in full_text for kw in ["挑戦を開始", "embark", "キャラクター選択", "character select", "出発"]):
+        if any(kw in full_text for kw in ["さあ挑戦を始めよう", "挑戦を始めよう", "ディリチャレンジ", "デイリーチャレンジ", "キャラクター選択", "character select", "embark", "挑戦を開始", "出発"]):
             detected_state = "CHARACTER_SELECT"
+        elif any(name in full_text for name in ["アイアンクラッド", "アイアンクラド", "サイレント", "ディフェクト", "ウォッチャー", "ネクロバインダー", "ironclad", "silent", "defect", "watcher", "necrobinder"]):
+            if not any(kw in full_text for kw in ["ターン終了", "end turn", "エンドターン"]):
+                detected_state = "CHARACTER_SELECT"
+        elif any(kw in full_text for kw in ["シングル", "singleplayer", "マルチプレイ", "multiplayer", "プレイ", "通常", "本日の挑戦", "カスタム", "standard", "daily challenge", "custom"]):
+            detected_state = "MAIN_MENU"
         elif any(kw in full_text for kw in ["ターン終了", "end turn", "エンドターン", "コモン", "アンコモン", "レア"]):
             detected_state = "COMBAT"
         elif any(kw in full_text for kw in ["休む", "鍛冶", "rest", "smith"]):
@@ -238,7 +238,7 @@ Do not include any explanation, markdown formatting, or punctuation. Output ONLY
             detected_state = "MAP"
         elif any(kw in full_text for kw in ["カードを選択", "報酬", "選択したカードを追加", "card reward", "take"]):
             detected_state = "REWARD"
-        elif any(kw in full_text for kw in ["メインメニューに戻る", "諦める", "defeat", "victory", "return to main", "敗北", "死亡", "ゲームオーバー", "スコア", "戻る", "終了"]):
+        elif any(kw in full_text for kw in ["メインメニューに戻る", "諦める", "defeat", "victory", "return to main", "敗北", "死亡", "ゲームオーバー"]):
             detected_state = "DEFEAT_SCREEN"
 
         if detected_state != "UNKNOWN":

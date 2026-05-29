@@ -146,7 +146,7 @@ def write_reflection(base_dir, loop_count, current_state):
         f.write(log_entry)
     print(f"📝 [Reflection] evolution_reflections.md に反省会を記録しました。")
 
-def run_spire_automator(target_title="Slay the Spire", max_loops=100):
+def run_spire_automator(target_title="Slay the Spire", max_loops=100000):
     print("🎵 Starting Autonomous Slay the Spire Infinite Loop (SPIRE)...")
     print("=" * 55)
     print("  ⌨️  キーボード操作ガイド:")
@@ -223,6 +223,46 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100):
             loop_count += 1
             print(f"\n🔄 --- Loop Cycle {loop_count} [{CURRENT_MODE}] ---")
             
+            # ─── Puppet Command Check ───
+            hints_path = os.path.join(BASE_DIR, "saves", "puppet_hints.json")
+            if os.path.exists(hints_path):
+                try:
+                    import json
+                    with open(hints_path, "r", encoding="utf-8") as f:
+                        hints = json.load(f)
+                except:
+                    hints = {}
+                
+                # A. Manual Click (Absolute Coordinates)
+                if hints.get("manual_click"):
+                    mc = hints["manual_click"]
+                    print(f"👤 [Puppet Command] Performing manual click at ({mc[0]}, {mc[1]})")
+                    body.click_position(mc, "User Manual Click")
+                    # Clear manual click
+                    hints["manual_click"] = None
+                    try:
+                        with open(hints_path, "w", encoding="utf-8") as f:
+                            json.dump(hints, f)
+                    except: pass
+                    time.sleep(1.0)
+                    continue
+                
+                # B. Manual Click (Percentage Coordinates)
+                if hints.get("manual_click_pct"):
+                    mcp = hints["manual_click_pct"]
+                    w, h = eye.window_size
+                    mc = (int(w * mcp[0]), int(h * mcp[1]))
+                    print(f"👤 [Puppet Command] Performing manual click pct at ({mc[0]}, {mc[1]})")
+                    body.click_position(mc, "User Manual Click Pct")
+                    # Clear manual click pct
+                    hints["manual_click_pct"] = None
+                    try:
+                        with open(hints_path, "w", encoding="utf-8") as f:
+                            json.dump(hints, f)
+                    except: pass
+                    time.sleep(1.0)
+                    continue
+
             # 1. Eye: grab screen frame
             frame = eye.grab_screen()
             state = eye.detect_game_state(frame)
@@ -346,6 +386,7 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100):
                 if target_coord:
                     success, reason = body.confirm_and_push(target_coord, f"Dynamic Event ({target_text})", eye)
                     if success:
+                        print("🌟 [AI feeling good] Screen successfully transitioned! Feeling extremely pleased!")
                         # 推論が成功（初速獲得）したので、辞書に記憶する
                         x_pct = target_coord[0] / eye.window_size[0]
                         y_pct = target_coord[1] / eye.window_size[1]
@@ -355,6 +396,8 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100):
                         eye.static_cycles_count = 0
                         time.sleep(2.0)
                     else:
+                        print("💔 [AI frustrated] Click had no response! Giving minus/negative reward penalty.")
+                        tactics.learning.record_event_failure(screen_hash, target_text)
                         print(f"⚠️ [Event] {target_text} のクリックに失敗しました。")
                 else:
                     tactics.log("押すべきボタンが見つかりません。証拠写真を残し、待機します。", state=state)
@@ -577,6 +620,7 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100):
                 success, reason = body.confirm_and_push(target_coord, f"Main Menu ({src})", eye)
                 
                 if not success:
+                    print("💔 [AI frustrated] Main Menu click had no response! Giving minus penalty.")
                     # 自律診断回路の起動
                     if ENABLE_LLM_DIAGNOSIS:
                         after_frame = eye.grab_screen()
@@ -593,6 +637,7 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100):
                     print("🔥 [System] 初速獲得のため、周辺領域をスキャン/プッシュします。")
                     # (ここに追加の総当たりロジックを記述可能)
                 else:
+                    print("🌟 [AI feeling good] Screen transitioned from Main Menu! Feeling extremely pleased!")
                     eye.last_frame_small = None
                     eye.static_cycles_count = 0
                 
@@ -601,10 +646,10 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100):
                 words = eye.get_all_text_coords(frame)
                 target_coord = None
                 src = ""
-                keywords = ["embark", "proceed", "go", "エンバーク", "出発", "挑戦", "開始", "進む"]
+                keywords = ["embark", "proceed", "go", "エンバーク", "出発", "開始"]
                 for w_data in words:
                     text_lower = w_data['text'].lower()
-                    if any(kw in text_lower for kw in keywords):
+                    if any(kw in text_lower for kw in keywords) and "さあ挑戦" not in text_lower:
                         target_coord = (w_data['x'] + w_data['w']//2, w_data['y'] + w_data['h']//2)
                         src = f"👁️OCR認識 ('{w_data['text']}')"
                         break
@@ -630,6 +675,7 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100):
                 success, reason = body.confirm_and_push(target_coord, f"Character Select ({src})", eye)
                 
                 if not success:
+                    print("💔 [AI frustrated] Character Select click had no response! Giving minus penalty.")
                     if ENABLE_LLM_DIAGNOSIS:
                         after_frame = eye.grab_screen()
                         diagnosis = eye.diagnose_bottleneck(before_frame, after_frame, f"Click CHARACTER_SELECT at {target_coord}")
@@ -641,6 +687,7 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100):
                     with open(os.path.join(BASE_DIR, "sls2_evolution.md"), "a", encoding="utf-8") as f:
                         f.write(f"- {time.strftime('%H:%M:%S')} [DIAGNOSIS] CHARACTER_SELECT始動失敗。原因推理: {diag_res}\n")
                 else:
+                    print("🌟 [AI feeling good] Started game from Character Select! Feeling extremely pleased!")
                     eye.last_frame_small = None
                     eye.static_cycles_count = 0
                 
@@ -668,10 +715,12 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100):
                 changed = body.click_and_verify(target_coord, "Return to Main Menu Button", max_shifts=4, shift_px=20)
                 human_observer.bot_is_clicking = False
                 if changed:
+                    print("🌟 [AI feeling good] Returned to Main Menu! Feeling extremely pleased!")
                     eye.last_frame_small = None
                     eye.static_cycles_count = 0
                     time.sleep(2.0)
                 else:
+                    print("💔 [AI frustrated] Defeat Screen click had no response! Giving minus penalty.")
                     print("⚠️ [Loop] DEFEAT_SCREEN click had no effect. Forcing fresh gemma4 query.")
                     eye.last_frame_small = None
                     eye.static_cycles_count = 99

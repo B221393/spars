@@ -542,13 +542,17 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100):
                     w, h = eye.window_size
                     human_coord = tactics.learning.get_human_click_coord("CHARACTER_SELECT", w, h)
                     
-                    # If it's the daily challenge screen (contains "デイリー" or "daily"), click the right check-mark button at (0.955, 0.56)
-                    is_daily = "デイリー" in full_text or "daily" in full_text
-                    fallback_x = 0.955 if is_daily else 0.83
-                    fallback_y = 0.56 if is_daily else 0.85
+                    # For STS2 Character Select, the start button is the right check-mark at (0.955, 0.56)
+                    # For STS1, it is at (0.83, 0.85)
+                    import win32gui
+                    win_title = win32gui.GetWindowText(driver.hwnd) if driver.hwnd else ""
+                    is_sts2 = "2" in win_title
+                    
+                    fallback_x = 0.955 if is_sts2 else 0.83
+                    fallback_y = 0.56 if is_sts2 else 0.85
                     
                     target_coord = human_coord if human_coord else (int(w * fallback_x), int(h * fallback_y))
-                    src = "👤人間学習済み" if human_coord else ("📐デイリーチャレンジ" if is_daily else "📐デフォルト")
+                    src = "👤人間学習済み" if human_coord else ("📐STS2確認" if is_sts2 else "📐デフォルト")
                 
                 # [初速のシステム] 実行と検証
                 before_frame = frame

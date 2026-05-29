@@ -258,7 +258,7 @@ Do not include any explanation, markdown formatting, or punctuation. Output ONLY
         # Check text anchors for instant state matching
         if any(kw in full_text for kw in ["シングル", "singleplayer", "マルチプレイ", "multiplayer", "プレイ"]) and not ("デイリー" in full_text or "daily" in full_text):
             detected_state = "MAIN_MENU"
-        elif any(kw in full_text for kw in ["挑戦を開始", "embark", "キャラクター選択", "character select", "挑戦", "デイリー", "daily"]):
+        elif any(kw in full_text for kw in ["挑戦を開始", "embark", "キャラクター選択", "character select", "挑戦", "デイリー", "daily", "アイアンクラッド", "アイアンクラド", "サイレント", "ディフェクト", "ウォッチャー", "ネクロバインダー", "ironclad", "silent", "defect", "watcher", "necrobinder"]):
             detected_state = "CHARACTER_SELECT"
         elif any(kw in full_text for kw in ["ターン終了", "end turn", "エンドターン", "コモン", "アンコモン", "レア"]):
             detected_state = "COMBAT"

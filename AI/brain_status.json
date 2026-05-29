@@ -32,9 +32,9 @@
     "SPIRE": {
       "status": "Autoplay Slay the Spire",
       "logs": [
-        "[17:24:38] Brain switched to SPIRE",
-        "[17:24:38] Triggering execute_step on SPIRE...",
-        "[17:24:38] Launching spire_loop.py from GAME folder..."
+        "[17:31:44] Brain switched to SPIRE",
+        "[17:31:44] Triggering execute_step on SPIRE...",
+        "[17:31:44] Launching spire_loop.py from GAME folder..."
       ]
     },
     "DOCS": {

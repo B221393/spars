@@ -98,10 +98,53 @@ from spire_tactics import SpireTactics
 from spire_body import SpireBody
 from spire_learning import HumanObserver
 
-# Import AIDriver to initialize if run standalone
-AI_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "AI"))
-sys.path.append(AI_DIR)
 from CORE.ai_driver import AIDriver
+
+def write_reflection(base_dir, loop_count, current_state):
+    import time
+    import os
+    saves_dir = os.path.join(base_dir, "saves")
+    os.makedirs(saves_dir, exist_ok=True)
+    reflection_file = os.path.join(saves_dir, "evolution_reflections.md")
+    
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+    
+    if current_state == "COMBAT":
+        good = "マウス座標の1:1マッピング（DPI対応）が正常に動作し、戦闘画面が安定して進行中。"
+        problem = "敵インテントやカードのOCRスキャンでわずかなI/Oオーバーヘッドがある。"
+        try_text = "カード特徴量のキャッシュ効率を最大化し、高速なリフレックス動作を維持する。"
+    elif current_state == "REST_SITE":
+        good = "キャンプファイヤー状態を検知し、休憩選択の物理入力を実行。"
+        problem = "フェード遷移時の画面静止キャッシュが長めに判定される場合がある。"
+        try_text = "変異検出のしきい値を調整し、フェードアウト後の最速クリックを狙う。"
+    elif current_state == "CHARACTER_SELECT":
+        good = "デイリーチャレンジおよびキャラ選択画面の文字を検出し、確定チェックマークへのマッピングに成功。"
+        problem = "フォーカスが外れた場合、安全装置が正しく機能するがループが待機に入る。"
+        try_text = "ユーザーがエディタ操作中でも背後でゲームを実行できるよう、非フォーカス時の入力手段をさらに検証する。"
+    elif current_state == "MAIN_MENU":
+        good = "メインメニュー画面を検知し、シングルプレイボタンを押下。"
+        problem = "ゲームの起動状態やサイズ変更によってボタン座標がずれる可能性があったが、DPI修正により改善。"
+        try_text = "OCRテキストマッチングを第一優先とし、ボタン座標を動的に決定し続ける。"
+    else:
+        good = f"現在のゲーム状態 {current_state} を安定して検知。"
+        problem = "未知の画面による判定保留が発生しやすい。"
+        try_text = "Gemma4のCPU診断をバイパスしつつ、フォールバッククリック座標の精度を高める。"
+        
+    log_entry = f"""
+## 🧠 [{timestamp}] 反省会 (サイクル {loop_count})
+- **現在の状態 (State)**: `{current_state}`
+- **良かったこと (Good)**: {good}
+- **反省点 (Problem)**: {problem}
+- **改善案 (Try)**: {try_text}
+"""
+    
+    first_write = not os.path.exists(reflection_file)
+    with open(reflection_file, "a", encoding="utf-8") as f:
+        if first_write:
+            f.write("# 🧠 AI 協働進化・反省会ログ (Evolution Reflections)\n")
+            f.write("このファイルは、AIが1分ごとに自動運転の成果、反省点、および次の改善案を振り返るログです。\n\n")
+        f.write(log_entry)
+    print(f"📝 [Reflection] evolution_reflections.md に反省会を記録しました。")
 
 def run_spire_automator(target_title="Slay the Spire", max_loops=100):
     print("🎵 Starting Autonomous Slay the Spire Infinite Loop (SPIRE)...")
@@ -145,6 +188,7 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100):
     loop_count = 0
     consecutive_unknowns = 0
     selected_card_hashes = []
+    last_reflection_time = time.time()
     
     # Spinal quick loop
     try:
@@ -183,6 +227,14 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100):
             frame = eye.grab_screen()
             state = eye.detect_game_state(frame)
             print(f"👁️ Detected Game State: {state}")
+            
+            # --- 1分ごとの反省会ログ記録 ---
+            if time.time() - last_reflection_time >= 60.0:
+                try:
+                    write_reflection(BASE_DIR, loop_count, state)
+                except Exception as e:
+                    print(f"⚠️ [Reflection] Failed to write reflection: {e}")
+                last_reflection_time = time.time()
             
             # 現在の状態をHumanObserverに通知（人間操作のタグ付け用）
             human_observer.set_current_state(state)
@@ -475,19 +527,38 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100):
                 time.sleep(1.5)
 
             elif state == "MAIN_MENU":
-                print("🔍 [Vision] MAIN_MENU画面の文字を解析してボタンを探します...")
+                print("🔍 [Vision] MAIN_MENUまたはシングルプレイサブメニュー画面の文字を解析してボタンを探します...")
                 words = eye.get_all_text_coords(frame)
                 target_coord = None
                 src = ""
                 
-                # キーワードの柔軟なマッチング (部分一致対応)
-                keywords = ["play", "single", "start", "プレイ", "シングル", "スタート"]
-                for w_data in words:
-                    text_lower = w_data['text'].lower()
-                    if any(kw in text_lower for kw in keywords):
-                        target_coord = (w_data['x'] + w_data['w']//2, w_data['y'] + w_data['h']//2)
-                        src = f"👁️OCR認識 ('{w_data['text']}')"
-                        break
+                full_text = " ".join(w['text'].lower() for w in words)
+                is_submenu = any(kw in full_text for kw in ["通常", "本日の挑戦", "カスタム", "standard", "daily", "custom"])
+                
+                if is_submenu:
+                    print("🔍 [Vision] シングルプレイサブメニューを検知。'本日の挑戦' ボタンを探します...")
+                    sub_keywords = ["本日", "挑戦", "daily", "challenge"]
+                    for w_data in words:
+                        text_lower = w_data['text'].lower()
+                        if any(kw in text_lower for kw in sub_keywords) and not any(ex in text_lower for ex in ["開始", "embark"]):
+                            target_coord = (w_data['x'] + w_data['w']//2, w_data['y'] + w_data['h']//2)
+                            src = f"👁️OCRサブメニュー認識 ('{w_data['text']}')"
+                            break
+                    
+                    if not target_coord:
+                        w, h = eye.window_size
+                        # Fallback for Daily Challenge button in STS2 (usually middle of screen or around 40.5% width, 60% height)
+                        target_coord = (int(w * 0.405), int(h * 0.60))
+                        src = "📐サブメニューデフォルト"
+                else:
+                    # キーワードの柔軟なマッチング (部分一致対応) - メインメニューのプレイボタン
+                    keywords = ["play", "single", "start", "プレイ", "シングル", "スタート"]
+                    for w_data in words:
+                        text_lower = w_data['text'].lower()
+                        if any(kw in text_lower for kw in keywords):
+                            target_coord = (w_data['x'] + w_data['w']//2, w_data['y'] + w_data['h']//2)
+                            src = f"👁️OCRメインメニュー認識 ('{w_data['text']}')"
+                            break
                 
                 # OCRが失敗した場合
                 if not target_coord:

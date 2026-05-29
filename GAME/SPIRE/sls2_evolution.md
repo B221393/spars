@@ -9,3 +9,6 @@
 - 17:25:57 [DIAGNOSIS] MAIN_MENU始動失敗。原因: Disabled (LLM Bottleneck Diagnosis is off)
 - 17:26:00 [DIAGNOSIS] MAIN_MENU始動失敗。原因: Disabled (LLM Bottleneck Diagnosis is off)
 - 17:26:03 [DIAGNOSIS] MAIN_MENU始動失敗。原因: Disabled (LLM Bottleneck Diagnosis is off)
+- 17:29:17 [DIAGNOSIS] MAIN_MENU始動失敗。原因: Disabled (LLM Bottleneck Diagnosis is off)
+- 17:29:25 [DIAGNOSIS] MAIN_MENU始動失敗。原因: Disabled (LLM Bottleneck Diagnosis is off)
+- 17:29:30 [DIAGNOSIS] MAIN_MENU始動失敗。原因: Disabled (LLM Bottleneck Diagnosis is off)

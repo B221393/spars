@@ -215,9 +215,37 @@ Do not include any explanation, markdown formatting, or punctuation. Output ONLY
         if overall_mean < 15:
             self.last_llm_state = "LOADING"
             return "LOADING"
-
-        # 3. Fast Pixel-based heuristics (Optimized Order to avoid false positives)
+            
+        # 3. Run Fast OCR-based state detection
+        self.log("Running fast OCR-based state detection...")
+        words = self.get_all_text_coords(frame)
+        full_text = " ".join(w['text'].lower() for w in words)
+        
         detected_state = "UNKNOWN"
+        # Check text anchors for instant state matching
+        if any(kw in full_text for kw in ["シングル", "singleplayer", "マルチプレイ", "multiplayer", "プレイ", "通常", "本日の挑戦", "カスタム", "standard", "daily challenge", "custom"]):
+            if any(name in full_text for name in ["アイアンクラッド", "アイアンクラド", "サイレント", "ディフェクト", "ウォッチャー", "ネクロバインダー", "ironclad", "silent", "defect", "watcher", "necrobinder", "デイリーチャレンジ"]):
+                detected_state = "CHARACTER_SELECT"
+            else:
+                detected_state = "MAIN_MENU"
+        elif any(kw in full_text for kw in ["挑戦を開始", "embark", "キャラクター選択", "character select", "出発"]):
+            detected_state = "CHARACTER_SELECT"
+        elif any(kw in full_text for kw in ["ターン終了", "end turn", "エンドターン", "コモン", "アンコモン", "レア"]):
+            detected_state = "COMBAT"
+        elif any(kw in full_text for kw in ["休む", "鍛冶", "rest", "smith"]):
+            detected_state = "REST_SITE"
+        elif any(kw in full_text for kw in ["マップ", "凡例", "map", "legend"]):
+            detected_state = "MAP"
+        elif any(kw in full_text for kw in ["カードを選択", "報酬", "選択したカードを追加", "card reward", "take"]):
+            detected_state = "REWARD"
+        elif any(kw in full_text for kw in ["メインメニューに戻る", "諦める", "defeat", "victory", "return to main", "敗北", "死亡", "ゲームオーバー", "スコア", "戻る", "終了"]):
+            detected_state = "DEFEAT_SCREEN"
+
+        if detected_state != "UNKNOWN":
+            self.last_llm_state = detected_state
+            return detected_state
+
+        # 4. Fast Pixel-based heuristics (Fallback if OCR is inconclusive)
         defeat_region_mean = np.mean(frame[int(h*0.83):int(h*0.93), int(w*0.45):int(w*0.55)])
         char_select_region_mean = np.mean(frame[int(h*0.80):int(h*0.90), int(w*0.78):int(w*0.88)])
         main_menu_region_mean = np.mean(frame[int(h*0.60):int(h*0.70), int(w*0.38):int(w*0.48)]) # shifted left for STS2
@@ -250,30 +278,6 @@ Do not include any explanation, markdown formatting, or punctuation. Output ONLY
             self.last_llm_state = detected_state
             return detected_state
 
-        # 4. Run Fast OCR-based state detection
-        self.log("Running fast OCR-based state detection...")
-        words = self.get_all_text_coords(frame)
-        full_text = " ".join(w['text'].lower() for w in words)
-        
-        # Check text anchors for instant state matching
-        if any(kw in full_text for kw in ["シングル", "singleplayer", "マルチプレイ", "multiplayer", "プレイ"]) and not ("デイリー" in full_text or "daily" in full_text):
-            detected_state = "MAIN_MENU"
-        elif any(kw in full_text for kw in ["挑戦を開始", "embark", "キャラクター選択", "character select", "挑戦", "デイリー", "daily", "アイアンクラッド", "アイアンクラド", "サイレント", "ディフェクト", "ウォッチャー", "ネクロバインダー", "ironclad", "silent", "defect", "watcher", "necrobinder"]):
-            detected_state = "CHARACTER_SELECT"
-        elif any(kw in full_text for kw in ["ターン終了", "end turn", "エンドターン", "コモン", "アンコモン", "レア"]):
-            detected_state = "COMBAT"
-        elif any(kw in full_text for kw in ["休む", "鍛冶", "rest", "smith"]):
-            detected_state = "REST_SITE"
-        elif any(kw in full_text for kw in ["マップ", "凡例", "map", "legend"]):
-            detected_state = "MAP"
-        elif any(kw in full_text for kw in ["カードを選択", "報酬", "選択したカードを追加", "card reward", "take"]):
-            detected_state = "REWARD"
-        elif any(kw in full_text for kw in ["メインメニューに戻る", "諦める", "defeat", "victory", "return to main"]):
-            detected_state = "DEFEAT_SCREEN"
-
-        if detected_state != "UNKNOWN":
-            self.last_llm_state = detected_state
-            return detected_state
 
         # 5. As a last resort, query the local Gemma 4 model
         self.log("Heuristics and OCR inconclusive. Querying local Gemma 4 model (CPU load active)...")

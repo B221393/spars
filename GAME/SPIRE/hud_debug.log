@@ -18,116 +18,15 @@
 🔌 AIDriver connected to HWND 657338 ('Slay the Spire 2')
 🔌 AIDriver connected to HWND 657338 ('Slay the Spire 2')
 👀 [HumanObserver] 人間操作の監視を開始しました
-📍 Current Mouse Position: (2329, 1599)
+📍 Current Mouse Position: (2371, 1529)
 
 🔄 --- Loop Cycle 1 [AUTO] ---
 👁️ Detected Game State: REST_SITE
 ⏸️ [Body] Game window lost focus. Pausing cursor action to prevent clicking on other apps...
 ▶️ [Body] Game window focused. Resuming cursor action.
 💪 [Body] Clicking Campfire Rest Option at (550, 450)
-📍 Current Mouse Position: (550, 450)
+📍 Current Mouse Position: (1713, 1546)
 
 🔄 --- Loop Cycle 2 [AUTO] ---
 👁️ Detected Game State: REST_SITE
-💪 [Body] Clicking Campfire Rest Option at (550, 450)
-📍 Current Mouse Position: (550, 450)
-
-🔄 --- Loop Cycle 3 [AUTO] ---
-👁️ Detected Game State: REST_SITE
-💪 [Body] Clicking Campfire Rest Option at (550, 450)
-📍 Current Mouse Position: (86, 1196)
-
-🔄 --- Loop Cycle 4 [AUTO] ---
-👁️ Detected Game State: REST_SITE
-💪 [Body] Clicking Campfire Rest Option at (550, 450)
-👤 [HumanObserver] 人間操作を学習: 状態=REST_SITE 座標=(112,1116) 比率=(0.044, 0.698)
-💾 [Learning] 人間推奨座標を保存: REST_SITE → (0.044, 0.698)
-📍 Current Mouse Position: (1036, 1038)
-
-🔄 --- Loop Cycle 5 [AUTO] ---
-👁️ Detected Game State: MAIN_MENU
-🔍 [Vision] MAIN_MENU画面の文字を解析してボタンを探します...
-👁️ [Eye] Starting persistent OCR background service...
-👁️ [Eye] Persistent OCR background service is READY.
-💪 [Body] 🚀 [Initial Velocity] 始動準備: 'Main Menu (👁️OCR認識 ('→シングルプレイ'))' をターゲットに設定。
-💪 [Body] ⚡ [Push] 物理入力を送信しました。座標: (989, 1007)
-👤 [HumanObserver] 人間操作を学習: 状態=MAIN_MENU 座標=(989,1007) 比率=(0.386, 0.629)
-💾 [Learning] 人間推奨座標を保存: MAIN_MENU → (0.455, 0.639)
-💪 [Body] ⚠️ [Bottleneck] 'Main Menu (👁️OCR認識 ('→シングルプレイ'))' を押しましたが、画面が動きません。
-⚠️ [System] LLM Bottleneck Diagnosis is disabled. Skipping CPU inference.
-🔥 [System] 初速獲得のため、周辺領域をスキャン/プッシュします。
-📍 Current Mouse Position: (925, 1058)
-
-🔄 --- Loop Cycle 6 [AUTO] ---
-👁️ Detected Game State: MAIN_MENU
-🔍 [Vision] MAIN_MENU画面の文字を解析してボタンを探します...
-💪 [Body] 🚀 [Initial Velocity] 始動準備: 'Main Menu (👁️OCR認識 ('へ出かけよう!世界中のプレイヤと最イズする'))' をターゲットに設定。
-👤 [HumanObserver] 人間操作を学習: 状態=MAIN_MENU 座標=(964,1006) 比率=(0.376, 0.629)
-💾 [Learning] 人間推奨座標を保存: MAIN_MENU → (0.435, 0.637)
-💪 [Body] ⚡ [Push] 物理入力を送信しました。座標: (1245, 1036)
-👤 [HumanObserver] 人間操作を学習: 状態=MAIN_MENU 座標=(570,961) 比率=(0.222, 0.601)
-💾 [Learning] 人間推奨座標を保存: MAIN_MENU → (0.393, 0.629)
-💪 [Body] ✅ [Shosoku] 初速を検知！ 画面変異係数: 4.38
-📍 Current Mouse Position: (683, 925)
-
-🔄 --- Loop Cycle 7 [AUTO] ---
-👁️ Detected Game State: MAIN_MENU
-🔍 [Vision] MAIN_MENU画面の文字を解析してボタンを探します...
-⚠️ [Vision] OCRでボタンが見つかりません。フォールバック座標を使用します。
-💪 [Body] 🚀 [Initial Velocity] 始動準備: 'Main Menu (👤人間学習済み)' をターゲットに設定。
-💪 [Body] ⚡ [Push] 物理入力を送信しました。座標: (1006, 1007)
-💪 [Body] ⚠️ [Bottleneck] 'Main Menu (👤人間学習済み)' を押しましたが、画面が動きません。
-⚠️ [System] LLM Bottleneck Diagnosis is disabled. Skipping CPU inference.
-🔥 [System] 初速獲得のため、周辺領域をスキャン/プッシュします。
-📍 Current Mouse Position: (1006, 1007)
-
-🔄 --- Loop Cycle 8 [AUTO] ---
-👁️ Detected Game State: MAIN_MENU
-🔍 [Vision] MAIN_MENU画面の文字を解析してボタンを探します...
-⚠️ [Vision] OCRでボタンが見つかりません。フォールバック座標を使用します。
-💪 [Body] 🚀 [Initial Velocity] 始動準備: 'Main Menu (👤人間学習済み)' をターゲットに設定。
-💪 [Body] ⚡ [Push] 物理入力を送信しました。座標: (1006, 1007)
-💪 [Body] ⚠️ [Bottleneck] 'Main Menu (👤人間学習済み)' を押しましたが、画面が動きません。
-⚠️ [System] LLM Bottleneck Diagnosis is disabled. Skipping CPU inference.
-🔥 [System] 初速獲得のため、周辺領域をスキャン/プッシュします。
-📍 Current Mouse Position: (1006, 1007)
-
-🔄 --- Loop Cycle 9 [AUTO] ---
-👁️ Detected Game State: MAIN_MENU
-🔍 [Vision] MAIN_MENU画面の文字を解析してボタンを探します...
-⚠️ [Vision] OCRでボタンが見つかりません。フォールバック座標を使用します。
-💪 [Body] 🚀 [Initial Velocity] 始動準備: 'Main Menu (👤人間学習済み)' をターゲットに設定。
-💪 [Body] ⚡ [Push] 物理入力を送信しました。座標: (1006, 1007)
-💪 [Body] ⚠️ [Bottleneck] 'Main Menu (👤人間学習済み)' を押しましたが、画面が動きません。
-⚠️ [System] LLM Bottleneck Diagnosis is disabled. Skipping CPU inference.
-🔥 [System] 初速獲得のため、周辺領域をスキャン/プッシュします。
-📍 Current Mouse Position: (1006, 1007)
-
-🔄 --- Loop Cycle 10 [AUTO] ---
-👁️ Detected Game State: MAIN_MENU
-🔍 [Vision] MAIN_MENU画面の文字を解析してボタンを探します...
-⚠️ [Vision] OCRでボタンが見つかりません。フォールバック座標を使用します。
-💪 [Body] 🚀 [Initial Velocity] 始動準備: 'Main Menu (👤人間学習済み)' をターゲットに設定。
-💪 [Body] ⚡ [Push] 物理入力を送信しました。座標: (1006, 1007)
-💪 [Body] ⚠️ [Bottleneck] 'Main Menu (👤人間学習済み)' を押しましたが、画面が動きません。
-⚠️ [System] LLM Bottleneck Diagnosis is disabled. Skipping CPU inference.
-🔥 [System] 初速獲得のため、周辺領域をスキャン/プッシュします。
-📍 Current Mouse Position: (1006, 1007)
-
-🔄 --- Loop Cycle 11 [AUTO] ---
-👁️ Detected Game State: MAIN_MENU
-🔍 [Vision] MAIN_MENU画面の文字を解析してボタンを探します...
-⚠️ [Vision] OCRでボタンが見つかりません。フォールバック座標を使用します。
-💪 [Body] 🚀 [Initial Velocity] 始動準備: 'Main Menu (👤人間学習済み)' をターゲットに設定。
-💪 [Body] ⚡ [Push] 物理入力を送信しました。座標: (1006, 1007)
-💪 [Body] ⚠️ [Bottleneck] 'Main Menu (👤人間学習済み)' を押しましたが、画面が動きません。
-⚠️ [System] LLM Bottleneck Diagnosis is disabled. Skipping CPU inference.
-🔥 [System] 初速獲得のため、周辺領域をスキャン/プッシュします。
-📍 Current Mouse Position: (1006, 1007)
-
-🔄 --- Loop Cycle 12 [AUTO] ---
-👁️ Detected Game State: MAIN_MENU
-🔍 [Vision] MAIN_MENU画面の文字を解析してボタンを探します...
-⚠️ [Vision] OCRでボタンが見つかりません。フォールバック座標を使用します。
-💪 [Body] 🚀 [Initial Velocity] 始動準備: 'Main Menu (👤人間学習済み)' をターゲットに設定。
 ⏸️ [Body] Game window lost focus. Pausing cursor action to prevent clicking on other apps...

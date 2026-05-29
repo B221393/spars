@@ -256,9 +256,9 @@ Do not include any explanation, markdown formatting, or punctuation. Output ONLY
         full_text = " ".join(w['text'].lower() for w in words)
         
         # Check text anchors for instant state matching
-        if any(kw in full_text for kw in ["シングル", "singleplayer", "マルチプレイ", "multiplayer", "プレイ"]):
+        if any(kw in full_text for kw in ["シングル", "singleplayer", "マルチプレイ", "multiplayer", "プレイ"]) and not ("デイリー" in full_text or "daily" in full_text):
             detected_state = "MAIN_MENU"
-        elif any(kw in full_text for kw in ["挑戦を開始", "embark", "キャラクター選択", "character select", "挑戦"]):
+        elif any(kw in full_text for kw in ["挑戦を開始", "embark", "キャラクター選択", "character select", "挑戦", "デイリー", "daily"]):
             detected_state = "CHARACTER_SELECT"
         elif any(kw in full_text for kw in ["ターン終了", "end turn", "エンドターン", "コモン", "アンコモン", "レア"]):
             detected_state = "COMBAT"

@@ -6,5 +6,11 @@
       "0000000000000000"
     ],
     "timestamp": "19:43:47"
+  },
+  {
+    "victory": false,
+    "max_floor": 1,
+    "selected_cards": [],
+    "timestamp": "17:00:15"
   }
 ]

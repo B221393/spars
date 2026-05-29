@@ -541,8 +541,14 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100):
                 if not target_coord:
                     w, h = eye.window_size
                     human_coord = tactics.learning.get_human_click_coord("CHARACTER_SELECT", w, h)
-                    target_coord = human_coord if human_coord else (int(w * 0.83), int(h * 0.85))
-                    src = "👤人間学習済み" if human_coord else "📐デフォルト"
+                    
+                    # If it's the daily challenge screen (contains "デイリー" or "daily"), click the right check-mark button at (0.955, 0.56)
+                    is_daily = "デイリー" in full_text or "daily" in full_text
+                    fallback_x = 0.955 if is_daily else 0.83
+                    fallback_y = 0.56 if is_daily else 0.85
+                    
+                    target_coord = human_coord if human_coord else (int(w * fallback_x), int(h * fallback_y))
+                    src = "👤人間学習済み" if human_coord else ("📐デイリーチャレンジ" if is_daily else "📐デフォルト")
                 
                 # [初速のシステム] 実行と検証
                 before_frame = frame

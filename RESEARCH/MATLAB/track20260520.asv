@@ -1,0 +1,74 @@
+% 動画の読み込み
+v = VideoReader('99920250703172334.avi');
+
+% トラッキング用の変数履歴
+histories = {}; % 各ドットの軌跡(X, Y)を記録するセル配列
+nextID = 1;
+
+figure('Name', 'Dot Tracking with regionprops');
+
+while hasFrame(v)
+    % 1. 画像の取得とグレースケール化
+    img = readFrame(v);
+    grayImg = rgb2gray(img);
+    
+    % 2. 二値化（ドット部分を抽出するために白黒にする）
+    level = graythresh(grayImg);
+    bwImg = ~imbinarize(grayImg, level);
+    
+    % 3. regionpropsによる特徴抽出 ★ここがスライドの核心部★
+    % 'Centroid' (重心/中心座標) と 'Area' (面積) を取得
+    stats = regionprops(bwImg, 'Centroid', 'Area');
+    
+    % ノイズを除去し、適切なサイズのドットだけを抽出（例: 面積700以上）
+    validStats = stats([stats.Area] > 700);
+    currPts = cat(1, validStats.Centroid); % 現在のフレームのドット中心座標リスト
+    
+    currIDs = NaN(size(currPts, 1), 1);
+    
+    % 4. ドットの追跡（前フレームとの距離比較による紐付け）
+    if ~isempty(currPts)
+        for id = 1:length(histories)
+            if isempty(histories{id}), continue; end
+            
+            % 前回の位置を取得
+            lastPos = histories{id}(end, :);
+            
+            % 現在検出されているすべての点との距離を計算
+            dist = sqrt(sum((currPts - lastPos).^2, 2));
+            [minD, minIdx] = min(dist);
+            
+            % 距離が閾値(50px)以内で、まだ他のIDが割り当てられていなければ同じドットとみなす
+            if minD < 50 && isnan(currIDs(minIdx))
+                currIDs(minIdx) = id;
+            end
+        end
+    end
+    
+    % 5. 新規ドットの登録と履歴の更新
+    for i = 1:size(currPts, 1)
+        if isnan(currIDs(i))
+            currIDs(i) = nextID;
+            nextID = nextID + 1;
+        end
+        
+        id = currIDs(i);
+        if id > length(histories) || isempty(histories{id})
+            histories{id} = currPts(i, :);
+        else
+            histories{id}(end+1, :) = currPts(i, :);
+        end
+    end
+    
+    % 6. トラッキング結果の描画
+    imshow(img); hold on;
+    colors = lines(max(nextID, 10));
+    for id = 1:length(histories)
+        if ~isempty(histories{id})
+            pts = histories{id};
+            plot(pts(:,1), pts(:,2), '-', 'Color', colors(id,:), 'LineWidth', 1.5);
+            plot(pts(end,1), pts(end,2), '.', 'Color', colors(id,:), 'MarkerSize', 10);
+        end
+    end
+    hold off; drawnow;
+end

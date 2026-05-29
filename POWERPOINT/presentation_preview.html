@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Computer Cowork System Architecture</title>
+    <style>
+        body {
+            background: radial-gradient(circle at center, #1e1e24 0%, #0d0d11 100%);
+            color: #e2e8f0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .deck-container {
+            width: 800px;
+            height: 500px;
+            background: rgba(30, 30, 40, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+        .slide {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .slide.active {
+            display: flex;
+            opacity: 1;
+        }
+        h1 {
+            color: #00d4ff;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+        }
+        .subtitle {
+            color: #94a3b8;
+            font-size: 1.2em;
+            margin-top: 0;
+        }
+        h2 {
+            color: #00d4ff;
+            font-size: 2em;
+            margin-top: 0;
+            border-bottom: 2px solid rgba(0, 212, 255, 0.2);
+            padding-bottom: 10px;
+        }
+        ul {
+            font-size: 1.2em;
+            line-height: 1.8;
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 12px;
+            list-style-type: square;
+            color: #e2e8f0;
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .btn {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid #00d4ff;
+            color: #00d4ff;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            background: #00d4ff;
+            color: #000;
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+        }
+        .dots {
+            display: flex;
+            gap: 8px;
+        }
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .dot.active {
+            background: #00d4ff;
+            box-shadow: 0 0 8px #00d4ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="deck-container">
+        <!-- Title Slide -->
+        <div class="slide active" id="slide-title">
+            <div class="slide-content">
+                <h1>Computer Cowork System Architecture</h1>
+                <p class="subtitle">AI Co-Worker with Human-like Actions & Dynamic Brain Switcher</p>
+            </div>
+        </div>
+        
+        
+            <div class="slide" id="slide-0">
+                <div class="slide-content">
+                    <h2>System Overview</h2>
+                    <ul><li>**Aesthetic UI**: Premium dark dashboard and floating desktop chat overlay.</li><li>**Human Emulation**: Bezier curve cursor paths and randomized typing speed.</li><li>**Multi-Brain Switchboard**: Specialized brains for Shogi, Voice, Research, and PowerPoint.</li></ul>
+                </div>
+            </div>
+            
+            <div class="slide" id="slide-1">
+                <div class="slide-content">
+                    <h2>Input Emulation Details</h2>
+                    <ul><li>**Bezier Paths**: Smooth mouse transitions with ease-in/ease-out acceleration.</li><li>**Randomized Key Latencies**: Non-instant typing to prevent bot detection.</li><li>**GDIPointer Overlay**: Real-time GDI crosshair overlay on target coordinates.</li></ul>
+                </div>
+            </div>
+            
+            <div class="slide" id="slide-2">
+                <div class="slide-content">
+                    <h2>PowerPoint Brain Logic</h2>
+                    <ul><li>**Automatic Compilation**: Parses simple notes files into slides.</li><li>**Fallback Formats**: Saves both native .pptx files and styled HTML presentations.</li><li>**Verification Loop**: Captures screenshots to verify successful action.</li></ul>
+                </div>
+            </div>
+            
+        
+        <div class="controls">
+            <button class="btn" onclick="prevSlide()">Prev</button>
+            <div class="dots">
+                <span class="dot active" onclick="showSlide('title')"></span>
+                <span class="dot" onclick="showSlide(0)"></span><span class="dot" onclick="showSlide(1)"></span><span class="dot" onclick="showSlide(2)"></span>
+            </div>
+            <button class="btn" onclick="nextSlide()">Next</button>
+        </div>
+    </div>
+
+    <script>
+        let currentIdx = -1;
+        const totalSlides = 3;
+        
+        function showSlide(index) {
+            document.getElementById('slide-title').classList.remove('active');
+            document.getElementById('slide-title').style.display = 'none';
+            for (let i = 0; i < totalSlides; i++) {
+                const el = document.getElementById('slide-' + i);
+                if (el) {
+                    el.classList.remove('active');
+                    el.style.display = 'none';
+                }
+            }
+            
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach(d => d.classList.remove('active'));
+            
+            if (index === 'title' || index === -1) {
+                currentIdx = -1;
+                const titleEl = document.getElementById('slide-title');
+                titleEl.style.display = 'flex';
+                setTimeout(() => titleEl.classList.add('active'), 50);
+                dots[0].classList.add('active');
+            } else {
+                currentIdx = index;
+                const el = document.getElementById('slide-' + index);
+                if (el) {
+                    el.style.display = 'flex';
+                    setTimeout(() => el.classList.add('active'), 50);
+                }
+                if (dots[index + 1]) {
+                    dots[index + 1].classList.add('active');
+                }
+            }
+        }
+        
+        function nextSlide() {
+            if (currentIdx < totalSlides - 1) {
+                showSlide(currentIdx + 1);
+            }
+        }
+        
+        function prevSlide() {
+            if (currentIdx > -1) {
+                showSlide(currentIdx - 1);
+            }
+        }
+        
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                prevSlide();
+            }
+        });
+    </script>
+</body>
+</html>

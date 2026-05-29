@@ -1,0 +1,1 @@
+[20260529_073936] Context: Stuck in EVENT: No logical buttons found by OCR/LLM.

@@ -1,0 +1,2 @@
+Action: This is an event, dialogue, or unknown screen in Slay the Spire. Tell me the exact text of the most logical button or option I should click to proceed (e.g., 'Leave', 'Talk', 'Choose', 'Skip', 'Next', 'Continue', 'Proceed', 'Max HP'). Output ONLY the exact text string.
+LLM Diagnosis: 画面上に明確な選択肢ボタンが見えないため、物語の進行を待機している状態か、または画面全体のタップによる進捗を要求している可能性が高いです。一度、画面の任意の場所をタップするか、あるいは何も操作せずに数秒間待機してみてください。

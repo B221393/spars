@@ -1,0 +1,6 @@
+Action: This is an event, dialogue, or unknown screen in Slay the Spire. Tell me the exact text of the most logical button or option I should click to proceed (e.g., 'Leave', 'Talk', 'Choose', 'Skip', 'Next', 'Continue', 'Proceed', 'Max HP'). Output ONLY the exact text string.
+LLM Diagnosis: 原因：
+選択肢が押せないのは、そのイベントまたはダイアログの「フェーズ（段階）」の進行が完了していないためです。物語上のテキストや状況説明の表示が完了するのを待つなど、ゲーム側から次のアクションへのトリガーを待っている可能性があります。
+
+対処法：
+画面に表示されているテキストやアニメーションの表示が完全に終わるまで待機してください。その後、選択肢が有効化されるか、次の行動に進むためのボタン（「進む」など）が画面下部に新しく表示されるはずです。

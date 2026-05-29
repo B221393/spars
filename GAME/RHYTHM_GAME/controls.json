@@ -1,0 +1,16 @@
+{
+  "game_title": "AI Rhythm Training Game",
+  "source_path": "C:\\Users\\yu_ci\\Desktop\\GENRE_FOLDERS\\GAME\\rhythm_game.html",
+  "buttons": [
+    {
+      "id": "btn-start",
+      "text": "START GAME"
+    }
+  ],
+  "keys": [
+    "KeyK",
+    "KeyD",
+    "KeyF",
+    "KeyJ"
+  ]
+}

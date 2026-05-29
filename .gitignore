@@ -1,0 +1,24 @@
+# Python
+*.pyc
+__pycache__/
+.env
+venv/
+env/
+
+# Node.js
+node_modules/
+package-lock.json
+
+# Data & Media (Excluded from Git due to size)
+*.csv
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.png
+*.jpg
+!GENRE_FOLDERS/DOCS/*.png
+
+# OS
+.DS_Store
+Thumbs.db

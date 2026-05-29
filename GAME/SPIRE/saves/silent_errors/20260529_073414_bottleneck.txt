@@ -1,0 +1,3 @@
+Action: Find 'Singleplayer' button coordinates
+LLM Diagnosis: 原因: ゲームが「[DIAGNOSTIC MODE]」に入っているため、プレイヤーの入力やメニュー操作が無効化されています。
+修正案: まず、この診断モードを終了させるための操作（例：特定のキー入力や終了ボタンのクリック）を行ってから、再度シングルプレイヤーの選択を試みてください。

@@ -1,0 +1,17 @@
+# Computer Cowork System Architecture
+AI Co-Worker with Human-like Actions & Dynamic Brain Switcher
+
+## System Overview
+- **Aesthetic UI**: Premium dark dashboard and floating desktop chat overlay.
+- **Human Emulation**: Bezier curve cursor paths and randomized typing speed.
+- **Multi-Brain Switchboard**: Specialized brains for Shogi, Voice, Research, and PowerPoint.
+
+## Input Emulation Details
+- **Bezier Paths**: Smooth mouse transitions with ease-in/ease-out acceleration.
+- **Randomized Key Latencies**: Non-instant typing to prevent bot detection.
+- **GDIPointer Overlay**: Real-time GDI crosshair overlay on target coordinates.
+
+## PowerPoint Brain Logic
+- **Automatic Compilation**: Parses simple notes files into slides.
+- **Fallback Formats**: Saves both native .pptx files and styled HTML presentations.
+- **Verification Loop**: Captures screenshots to verify successful action.

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Training Game</title>
+    <style>
+        body { background: #111; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
+        #game-container { border: 4px solid #444; padding: 20px; text-align: center; background: #222; }
+        .button { background: white; color: black; padding: 20px 40px; font-size: 24px; font-weight: bold; border: none; cursor: pointer; margin: 10px; transition: transform 0.1s; }
+        .button:active { transform: scale(0.9); }
+        #score { font-size: 32px; margin-bottom: 20px; }
+        #status { color: #aaa; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="score">Score: 0</div>
+        <button class="button" id="click-me" onclick="addScore()">CLICK ME (White Button)</button>
+        <div id="status">Wait for AI to click the white button...</div>
+    </div>
+
+    <script>
+        let score = 0;
+        function addScore() {
+            score += 1;
+            document.getElementById('score').innerText = "Score: " + score;
+            const status = document.getElementById('status');
+            status.innerText = "AI Success! Click count: " + score;
+            status.style.color = "#0f0";
+            
+            const btn = document.getElementById('click-me');
+            btn.style.position = 'absolute';
+            btn.style.left = (Math.random() * 60 + 20) + "%";
+            btn.style.top = (Math.random() * 60 + 20) + "%";
+        }
+    </script>
+</body>
+</html>

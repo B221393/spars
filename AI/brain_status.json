@@ -1,0 +1,55 @@
+{
+  "active_brain": "SPIRE",
+  "brains": {
+    "SHOGI": {
+      "status": "Idle",
+      "logs": []
+    },
+    "VOICE": {
+      "status": "Idle",
+      "logs": []
+    },
+    "RESEARCH": {
+      "status": "Idle",
+      "logs": []
+    },
+    "DEVELOPMENT": {
+      "status": "Idle",
+      "logs": []
+    },
+    "POWERPOINT": {
+      "status": "Idle",
+      "logs": []
+    },
+    "GAME": {
+      "status": "Idle",
+      "logs": []
+    },
+    "OFFICE": {
+      "status": "Idle",
+      "logs": []
+    },
+    "SPIRE": {
+      "status": "Idle",
+      "logs": [
+        "[16:29:56] Brain switched to SPIRE"
+      ]
+    },
+    "DOCS": {
+      "status": "Idle",
+      "logs": []
+    },
+    "REACTION": {
+      "status": "Idle",
+      "logs": []
+    },
+    "RHYTHM": {
+      "status": "Idle",
+      "logs": []
+    },
+    "RHYTHM_GAME": {
+      "status": "Idle",
+      "logs": []
+    }
+  }
+}

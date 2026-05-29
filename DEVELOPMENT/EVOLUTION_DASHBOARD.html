@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Evolution Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #1a1a1a; color: #eee; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: #2a2a2a; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        h1 { color: #00d4ff; text-align: center; }
+        .status { font-size: 1.2em; margin-bottom: 20px; text-align: center; color: #27ae60; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 AI 自律進化・可視化ダッシュボード</h1>
+        <div class="status">● システム稼働中: 数百回の改善ループを実行中</div>
+        
+        <div class="card" style="margin-bottom: 20px; text-align: center;">
+            <h2>🗺️ システム全体像 & フィードバック構造</h2>
+            <img src="OUTPUT/SYSTEM_ARCHITECTURE.svg" alt="System Architecture" style="max-width: 100%; height: auto; border-radius: 5px;">
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h2>📈 音声認識・明瞭度スコアの推移</h2>
+                <canvas id="voiceChart"></canvas>
+            </div>
+            <div class="card">
+                <h2>📋 タスク完了率・進捗</h2>
+                <canvas id="taskChart"></canvas>
+            </div>
+            <div class="card">
+                <h2>🧠 LLM リソース使用率 (1分ごと)</h2>
+                <div id="llmMetrics" style="font-size: 1.1em; color: #00d4ff; margin-bottom: 10px;"></div>
+                <canvas id="llmChart" style="max-height: 250px;"></canvas>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+            <h2>📝 最新の自己修正ログ</h2>
+            <div id="logContent" style="font-family: monospace; height: 200px; overflow-y: scroll; background: #000; padding: 10px;"></div>
+        </div>
+    </div>
+
+    <script>
+        async function updateDashboard() {
+            try {
+                // 統計データの取得
+                const statsRes = await fetch('OUTPUT/CODE_METRICS.json');
+                const stats = await statsRes.json();
+                document.getElementById('projectStats').innerHTML = 
+                    `Total Lines: ${stats.total_lines} | Total Files: ${stats.total_files}`;
+                
+                // 言語比率チャート
+                const ctxLang = document.getElementById('langChart').getContext('2d');
+                new Chart(ctxLang, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(stats.languages),
+                        datasets: [{
+                            data: Object.values(stats.languages),
+                            backgroundColor: ['#3776ab', '#e34c26', '#f1e05a', '#f34b7d', '#2b7489', '#89e051']
+                        }]
+                    },
+                    options: { plugins: { legend: { position: 'right', labels: { color: '#eee' } } } }
+                });
+
+                // 音声履歴の取得
+                const response = await fetch('OUTPUT/VOICE_CLARITY_HISTORY.json');
+                const history = await response.json();
+                
+                // LLM使用率の取得
+                const usageRes = await fetch('OUTPUT/LLM_USAGE_STATS.json');
+                const usageHistory = await usageRes.json();
+                
+                const usageLabels = usageHistory.map(u => u.timestamp);
+                const reqCounts = usageHistory.map(u => u.requests);
+                const loadTimes = usageHistory.map(u => u.load_ms / 1000); // 秒に変換
+
+                new Chart(document.getElementById('llmChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: usageLabels,
+                        datasets: [{
+                            label: 'リクエスト数',
+                            data: reqCounts,
+                            backgroundColor: '#00d4ff'
+                        }, {
+                            label: '推論負荷 (秒)',
+                            data: loadTimes,
+                            type: 'line',
+                            borderColor: '#ff00ff',
+                            fill: false
+                        }]
+                    }
+                });
+                
+                const labels = history.map(h => h.timestamp.split(' ')[1]);
+                const scores = history.map(h => h.score);
+
+                new Chart(document.getElementById('voiceChart'), {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '明瞭度スコア',
+                            data: scores,
+                            borderColor: '#00d4ff',
+                            tension: 0.1
+                        }]
+                    }
+                });
+
+                document.getElementById('logContent').innerHTML = history.reverse().map(h => 
+                    `[${h.timestamp}] Score: ${h.score} | Fix: ${JSON.stringify(h.settings)}`
+                ).join('<br>');
+
+            } catch(e) {}
+        }
+        setInterval(updateDashboard, 5000);
+        updateDashboard();
+    </script>
+</body>
+</html>

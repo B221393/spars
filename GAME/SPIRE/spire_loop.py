@@ -514,7 +514,7 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100000):
                 continue
 
             # ─── GLOBAL HIGH PRIORITY: Check for "進む" / "Proceed" / "続ける" / "Continue" ───
-            if state not in ["MAIN_MENU", "CHARACTER_SELECT"]:
+            if state not in ["MAIN_MENU", "CHARACTER_SELECT", "MAP"]:
                 words = eye.get_all_text_coords(frame)
                 proceed_coord = None
                 proceed_text = ""
@@ -1289,8 +1289,11 @@ Tell me the exact text label of the most logical button or option I should click
                             cached_name = tactics.learning.get_card_name(rhash)
                             if not cached_name:
                                 ocr_name = eye.perform_ocr(crop)
-                                tactics.learning.update_card_name(rhash, ocr_name)
-                                print(f"📖 [OCR] First-time scan: took photo of card {rhash} and recognized name as '{ocr_name}'")
+                                if ocr_name:
+                                    cost, clean_name = parse_card_cost_and_clean_name(ocr_name)
+                                    cat = guess_card_category(clean_name)
+                                    tactics.learning.update_card_name(rhash, clean_name, cost, cat)
+                                    print(f"📖 [OCR] First-time scan: took photo of card {rhash} and recognized name as '{clean_name}' (Cost: {cost}, Cat: {cat})")
                             else:
                                 print(f"📖 [OCR Cache] Instantly recognized card {rhash} as '{cached_name}'")
                                 

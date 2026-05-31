@@ -102,13 +102,32 @@ STANDARD_CARDS = {
 import re
 
 def parse_card_cost_and_clean_name(ocr_name):
+    # Parse cost (digits or X/x)
     match = re.search(r'\b([0-9xX])\b', ocr_name)
+    cost = 1
     if match:
         cost_str = match.group(1)
         cost = int(cost_str) if cost_str.isdigit() else 0
-        clean_name = ocr_name.replace(cost_str, "").strip()
-        return cost, clean_name
-    return 1, ocr_name
+        raw_name = ocr_name.replace(cost_str, "").strip()
+    else:
+        raw_name = ocr_name.strip()
+        
+    # Standardize card name by matching against STANDARD_CARDS keys
+    normalized_raw = re.sub(r'[\s\u3000\uff0c\u3001;、]', '', raw_name).lower()
+    
+    # Try exact normalized match
+    for std_name in STANDARD_CARDS.keys():
+        std_normalized = re.sub(r'[\s\u3000\uff0c\u3001;、]', '', std_name).lower()
+        if std_normalized == normalized_raw:
+            return cost, std_name
+            
+    # Try substring match
+    for std_name in STANDARD_CARDS.keys():
+        std_normalized = re.sub(r'[\s\u3000\uff0c\u3001;、]', '', std_name).lower()
+        if std_normalized and (std_normalized in normalized_raw or normalized_raw in std_normalized):
+            return cost, std_name
+            
+    return cost, raw_name
 
 def guess_card_category(ocr_name):
     # Normalize by removing all spaces (half-width, full-width, full-width space ideograph) and common punctuation
@@ -686,8 +705,41 @@ class SpireLearning:
             self.save_json(DB_PATH, self.card_db)
 
     def get_card_name(self, card_hash):
+        if not card_hash:
+            return ""
+            
+        # 1. Exact match
         if card_hash in self.card_db:
-            return self.card_db[card_hash].get("name", "")
+            name = self.card_db[card_hash].get("name", "")
+            if name:
+                return name
+                
+        # 2. Similarity match (Hamming distance <= 4)
+        best_match = None
+        min_dist = 99
+        for db_hash, entry in self.card_db.items():
+            name = entry.get("name", "")
+            if name:  # Only match against entries that have a confirmed/valid name
+                # Calculate Hamming distance between the two hex strings
+                dist = sum(c1 != c2 for c1, c2 in zip(card_hash, db_hash))
+                if dist <= 4 and dist < min_dist:
+                    min_dist = dist
+                    best_match = entry
+                    
+        if best_match:
+            # Propagate the name/cost/category to the new hash to confirm/fix it
+            self.card_db[card_hash] = {
+                "name": best_match.get("name", ""),
+                "cost": best_match.get("cost", 1),
+                "category": best_match.get("category", "UNKNOWN"),
+                "score": best_match.get("score", 0.0),
+                "times_played": 0,
+                "times_selected": 0
+            }
+            self.save_json(DB_PATH, self.card_db)
+            print(f"🔗 [CardDB] Associated new hash {card_hash} with existing card '{best_match.get('name')}' (Hamming dist: {min_dist})")
+            return best_match.get("name", "")
+            
         return ""
 
     def update_card_name(self, card_hash, name, cost=1, category="UNKNOWN"):

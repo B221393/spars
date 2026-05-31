@@ -12,5 +12,101 @@
     "max_floor": 1,
     "selected_cards": [],
     "timestamp": "17:00:15"
+  },
+  {
+    "victory": false,
+    "max_floor": 21,
+    "selected_cards": [],
+    "timestamp": "17:50:55"
+  },
+  {
+    "victory": false,
+    "max_floor": 21,
+    "selected_cards": [],
+    "timestamp": "18:26:10"
+  },
+  {
+    "victory": false,
+    "max_floor": 13,
+    "selected_cards": [],
+    "timestamp": "18:30:54"
+  },
+  {
+    "victory": false,
+    "max_floor": 8,
+    "selected_cards": [],
+    "timestamp": "19:18:57"
+  },
+  {
+    "victory": false,
+    "max_floor": 6,
+    "selected_cards": [],
+    "timestamp": "09:09:30"
+  },
+  {
+    "victory": false,
+    "max_floor": 16,
+    "selected_cards": [
+      "8112062488585060",
+      "8112062448585060",
+      "8112062508585060",
+      "8112062508185060",
+      "8112062408585060",
+      "81120725080850e0",
+      "81120624485850e8",
+      "81120625085850e8"
+    ],
+    "timestamp": "10:33:21"
+  },
+  {
+    "victory": false,
+    "max_floor": 57,
+    "selected_cards": [],
+    "timestamp": "10:58:25"
+  },
+  {
+    "victory": false,
+    "max_floor": 1,
+    "selected_cards": [],
+    "timestamp": "11:06:13"
+  },
+  {
+    "victory": false,
+    "max_floor": 1,
+    "selected_cards": [
+      "85820df8219d5943",
+      "2c323ac2aee0e10f"
+    ],
+    "timestamp": "13:37:23"
+  },
+  {
+    "victory": false,
+    "max_floor": 2,
+    "selected_cards": [],
+    "timestamp": "17:13:39"
+  },
+  {
+    "victory": false,
+    "max_floor": 1,
+    "selected_cards": [],
+    "timestamp": "09:37:58"
+  },
+  {
+    "victory": false,
+    "max_floor": 8,
+    "selected_cards": [],
+    "timestamp": "09:55:23"
+  },
+  {
+    "victory": false,
+    "max_floor": 2,
+    "selected_cards": [],
+    "timestamp": "14:30:50"
+  },
+  {
+    "victory": false,
+    "max_floor": 2,
+    "selected_cards": [],
+    "timestamp": "14:47:35"
   }
 ]

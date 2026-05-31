@@ -49,13 +49,26 @@ class AIDriver:
         self.connect()
 
     def connect(self):
-        """Dynamically finds the window matching target_title"""
+        """Dynamically finds the window matching target_title safely"""
         hwnds = []
-        def win_enum(h, extra):
-            title = win32gui.GetWindowText(h)
-            if win32gui.IsWindowVisible(h) and self.target_title.lower() in title.lower():
+        
+        # 1. Try exact match first to prevent collision with console windows/editor tabs
+        def win_enum_exact(h, extra):
+            title = win32gui.GetWindowText(h).strip()
+            if win32gui.IsWindowVisible(h) and title.lower() == self.target_title.strip().lower():
                 extra.append(h)
-        win32gui.EnumWindows(win_enum, hwnds)
+        win32gui.EnumWindows(win_enum_exact, hwnds)
+        
+        # 2. Fallback to substring matching, but exclude common developer console/editor windows
+        if not hwnds:
+            exclude_kws = ["shosoku", "thought", "vision", "code", "cmd.exe", "powershell", "chrome", "ide", "automator", "loop"]
+            def win_enum_sub(h, extra):
+                title = win32gui.GetWindowText(h).strip()
+                if win32gui.IsWindowVisible(h) and self.target_title.lower() in title.lower():
+                    if not any(kw in title.lower() for kw in exclude_kws):
+                        extra.append(h)
+            win32gui.EnumWindows(win_enum_sub, hwnds)
+            
         if hwnds:
             self.hwnd = hwnds[0]
             print(f"🔌 AIDriver connected to HWND {self.hwnd} ('{win32gui.GetWindowText(self.hwnd)}')")
@@ -165,15 +178,9 @@ class AIDriver:
         self.bezier_move(x, y)
         time.sleep(random.uniform(0.08, 0.15)) # Small human delay before pressing down
         
-        try:
-            import pyautogui
-            pyautogui.mouseDown()
-            time.sleep(duration + random.uniform(-0.02, 0.04))
-            pyautogui.mouseUp()
-        except Exception as e:
-            ctypes.windll.user32.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
-            time.sleep(duration + random.uniform(-0.02, 0.04))
-            ctypes.windll.user32.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
+        ctypes.windll.user32.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
+        time.sleep(duration + random.uniform(-0.02, 0.04))
+        ctypes.windll.user32.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
         time.sleep(random.uniform(0.1, 0.2)) # Small human delay after release
         
         if force_focus and prev_hwnd and prev_hwnd != self.hwnd:
@@ -184,20 +191,120 @@ class AIDriver:
 
     # --- Keyboard operations ---
     def press_key(self, key_code):
+        """Send a single key. Accepts int VK code, single-char string, or named key (e.g., 'ENTER')."""
         if not self.check_connection(): return
+        # If string, handle single-char or named keys
         if isinstance(key_code, str):
-            key_code = ord(key_code.upper())
-        win32gui.PostMessage(self.hwnd, win32con.WM_KEYDOWN, key_code, 0)
-        # Randomized duration between keydown and keyup
-        time.sleep(random.uniform(0.05, 0.12))
-        win32gui.PostMessage(self.hwnd, win32con.WM_KEYUP, key_code, 0)
+            key = key_code.upper()
+            if len(key) == 1:
+                # Send as character input
+                win32gui.PostMessage(self.hwnd, win32con.WM_CHAR, ord(key), 0)
+                return
+            vk = self._name_to_vk(key)
+            if vk is None:
+                return
+            win32gui.PostMessage(self.hwnd, win32con.WM_KEYDOWN, vk, 0)
+            time.sleep(random.uniform(0.02, 0.08))
+            win32gui.PostMessage(self.hwnd, win32con.WM_KEYUP, vk, 0)
+            return
+
+        # Numeric VK code
+        try:
+            vk = int(key_code)
+        except:
+            return
+        win32gui.PostMessage(self.hwnd, win32con.WM_KEYDOWN, vk, 0)
+        time.sleep(random.uniform(0.02, 0.08))
+        win32gui.PostMessage(self.hwnd, win32con.WM_KEYUP, vk, 0)
+
+    def _name_to_vk(self, name):
+        """Map common key names to virtual-key codes."""
+        name = name.upper()
+        mapping = {
+            'ENTER': win32con.VK_RETURN,
+            'TAB': win32con.VK_TAB,
+            'ESC': win32con.VK_ESCAPE,
+            'BACKSPACE': win32con.VK_BACK,
+            'SPACE': win32con.VK_SPACE,
+            'LEFT': win32con.VK_LEFT,
+            'RIGHT': win32con.VK_RIGHT,
+            'UP': win32con.VK_UP,
+            'DOWN': win32con.VK_DOWN,
+            'HOME': win32con.VK_HOME,
+            'END': win32con.VK_END,
+            'PGUP': win32con.VK_PRIOR,
+            'PGDN': win32con.VK_NEXT,
+            'DELETE': win32con.VK_DELETE,
+            'INSERT': win32con.VK_INSERT,
+        }
+        if name in mapping:
+            return mapping[name]
+        # F-keys
+        if name.startswith('F') and name[1:].isdigit():
+            try:
+                fnum = int(name[1:])
+                if 1 <= fnum <= 24:
+                    return getattr(win32con, f'VK_F{fnum}', None)
+            except:
+                pass
+        return None
 
     def type_string(self, text):
+        """
+        Enhanced typing:
+         - Plain characters sent as WM_CHAR
+         - Special sequences in braces: {ENTER}, {TAB}, {CTRL+V}, {SHIFT+A}, {F5}, etc.
+        """
         if not self.check_connection(): return
-        for char in text:
-            win32gui.PostMessage(self.hwnd, win32con.WM_CHAR, ord(char), 0)
-            # Randomized latency mimicking human speed (around 150-300 CPM)
-            time.sleep(random.uniform(0.03, 0.10))
+        import re
+        tokens = re.split(r'(\{.*?\})', text)
+        vk_mods = {'CTRL': win32con.VK_CONTROL, 'ALT': win32con.VK_MENU, 'SHIFT': win32con.VK_SHIFT, 'LWIN': win32con.VK_LWIN}
+
+        for tok in tokens:
+            if not tok:
+                continue
+            if tok.startswith('{') and tok.endswith('}'):
+                seq = tok[1:-1]
+                parts = seq.split('+')
+                if len(parts) > 1:
+                    mods = parts[:-1]
+                    key = parts[-1]
+                    # key down modifiers
+                    for m in mods:
+                        mm = m.upper()
+                        if mm in vk_mods:
+                            win32gui.PostMessage(self.hwnd, win32con.WM_KEYDOWN, vk_mods[mm], 0)
+                            time.sleep(0.01)
+                    # send key
+                    if len(key) == 1:
+                        win32gui.PostMessage(self.hwnd, win32con.WM_CHAR, ord(key), 0)
+                    else:
+                        vk = self._name_to_vk(key.upper())
+                        if vk:
+                            win32gui.PostMessage(self.hwnd, win32con.WM_KEYDOWN, vk, 0)
+                            time.sleep(0.02)
+                            win32gui.PostMessage(self.hwnd, win32con.WM_KEYUP, vk, 0)
+                    # key up modifiers (reverse order)
+                    for m in reversed(mods):
+                        mm = m.upper()
+                        if mm in vk_mods:
+                            win32gui.PostMessage(self.hwnd, win32con.WM_KEYUP, vk_mods[mm], 0)
+                            time.sleep(0.01)
+                else:
+                    key = parts[0]
+                    if len(key) == 1:
+                        win32gui.PostMessage(self.hwnd, win32con.WM_CHAR, ord(key), 0)
+                    else:
+                        vk = self._name_to_vk(key.upper())
+                        if vk:
+                            win32gui.PostMessage(self.hwnd, win32con.WM_KEYDOWN, vk, 0)
+                            time.sleep(0.02)
+                            win32gui.PostMessage(self.hwnd, win32con.WM_KEYUP, vk, 0)
+                time.sleep(random.uniform(0.02, 0.08))
+            else:
+                for ch in tok:
+                    win32gui.PostMessage(self.hwnd, win32con.WM_CHAR, ord(ch), 0)
+                    time.sleep(random.uniform(0.03, 0.10))
 
     # --- GDI Pointer Overlay ---
     def draw_pointer(self, x, y, size=30):
@@ -236,7 +343,7 @@ class AIDriver:
 
     # --- Screen Capture & Hash Verification ---
     def capture(self):
-        """Captures the target window client area"""
+        """Captures the target window client area via desktop screen capture and cropping (DirectX/Vulkan safe)"""
         if not self.check_connection(): return None
         old_ctx = None
         try:
@@ -246,38 +353,56 @@ class AIDriver:
             except: pass
         try:
             left, top, right, bot = win32gui.GetWindowRect(self.hwnd)
-            w = right - left
-            h = bot - top
         finally:
             if old_ctx:
                 try: ctypes.windll.user32.SetThreadDpiAwarenessContext(old_ctx)
                 except: pass
 
+        w = right - left
+        h = bot - top
         if w <= 0 or h <= 0: return None
         
-        hwndDC = win32gui.GetWindowDC(self.hwnd)
-        mfcDC  = win32ui.CreateDCFromHandle(hwndDC)
-        saveDC = mfcDC.CreateCompatibleDC()
-        saveBitMap = win32ui.CreateBitmap()
-        saveBitMap.CreateCompatibleBitmap(mfcDC, w, h)
-        saveDC.SelectObject(saveBitMap)
-        
-        result = ctypes.windll.user32.PrintWindow(self.hwnd, saveDC.GetSafeHdc(), 2)
-        if result == 0:
-            result = ctypes.windll.user32.PrintWindow(self.hwnd, saveDC.GetSafeHdc(), 0)
-        if result == 0:
-            saveDC.BitBlt((0, 0), (w, h), mfcDC, (0, 0), win32con.SRCCOPY)
+        try:
+            from PIL import ImageGrab
+            desktop = ImageGrab.grab()
+            dw, dh = desktop.size
             
-        bmpinfo = saveBitMap.GetInfo()
-        bmpstr = saveBitMap.GetBitmapBits(True)
-        
-        im = Image.frombuffer('RGB', (bmpinfo['bmWidth'], bmpinfo['bmHeight']), bmpstr, 'raw', 'BGRX', 0, 1)
-        
-        win32gui.DeleteObject(saveBitMap.GetHandle())
-        saveDC.DeleteDC()
-        mfcDC.DeleteDC()
-        win32gui.ReleaseDC(self.hwnd, hwndDC)
-        return im
+            left_c = max(0, left)
+            top_c = max(0, top)
+            right_c = min(dw, right)
+            bot_c = min(dh, bot)
+            
+            if right_c <= left_c or bot_c <= top_c:
+                return None
+                
+            return desktop.crop((left_c, top_c, right_c, bot_c))
+        except Exception as e:
+            print(f"⚠️ [AIDriver] Desktop capture crop failed: {e}. Falling back to GDI...")
+            
+            # Fallback to GDI capture method if ImageGrab fails
+            hwndDC = win32gui.GetWindowDC(self.hwnd)
+            mfcDC  = win32ui.CreateDCFromHandle(hwndDC)
+            saveDC = mfcDC.CreateCompatibleDC()
+            saveBitMap = win32ui.CreateBitmap()
+            saveBitMap.CreateCompatibleBitmap(mfcDC, w, h)
+            saveDC.SelectObject(saveBitMap)
+            
+            result = ctypes.windll.user32.PrintWindow(self.hwnd, saveDC.GetSafeHdc(), 2)
+            if result == 0:
+                result = ctypes.windll.user32.PrintWindow(self.hwnd, saveDC.GetSafeHdc(), 0)
+            if result == 0:
+                saveDC.BitBlt((0, 0), (w, h), mfcDC, (0, 0), win32con.SRCCOPY)
+                
+            bmpinfo = saveBitMap.GetInfo()
+            bmpstr = saveBitMap.GetBitmapBits(True)
+            
+            im = Image.frombuffer('RGB', (bmpinfo['bmWidth'], bmpinfo['bmHeight']), bmpstr, 'raw', 'BGRX', 0, 1)
+            
+            win32gui.DeleteObject(saveBitMap.GetHandle())
+            saveDC.DeleteDC()
+            mfcDC.DeleteDC()
+            win32gui.ReleaseDC(self.hwnd, hwndDC)
+            return im
 
     def get_hash(self, img_pil):
         if img_pil is None: return ""

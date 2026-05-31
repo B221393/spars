@@ -660,7 +660,7 @@ class BrainSwitchboard:
         if name in self.brains:
             self.active_brain_name = name
             if name == "SPIRE":
-                self.driver.target_title = "Slay the Spire"
+                self.driver.target_title = "Slay the Spire 2"
                 self.driver.connect()
             elif name == "GAME":
                 self.driver.target_title = "AI Training Game"

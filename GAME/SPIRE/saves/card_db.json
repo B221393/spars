@@ -2,20 +2,18 @@
   "0000000000000000": {
     "category": "UNKNOWN",
     "score": 0.2,
-    "times_played": 20,
-    "times_selected": 1
+    "times_played": 24,
+    "times_selected": 1,
+    "name": "",
+    "cost": 1
   },
   "0081805958008100": {
     "category": "UNKNOWN",
     "score": 0.0,
     "times_played": 0,
-    "times_selected": 0
-  },
-  "0023654867006020": {
-    "category": "UNKNOWN",
-    "score": 0.0,
-    "times_played": 0,
-    "times_selected": 0
+    "times_selected": 0,
+    "name": "U あ あ つ ま あ d d",
+    "cost": 1
   },
   "b000000000000000": {
     "category": "UNKNOWN",
@@ -31,11 +29,12 @@
     "times_selected": 0
   },
   "004ae98005256116": {
-    "name": "",
+    "name": "年 代",
     "category": "UNKNOWN",
     "score": 0.0,
     "times_played": 0,
-    "times_selected": 0
+    "times_selected": 0,
+    "cost": 1
   },
   "e884800001000109": {
     "name": "",
@@ -58,26 +57,21 @@
     "times_played": 0,
     "times_selected": 0
   },
-  "0024640060b00000": {
-    "name": "",
-    "category": "UNKNOWN",
-    "score": 0.0,
-    "times_played": 0,
-    "times_selected": 0
-  },
   "00bb290000000000": {
-    "name": "",
+    "name": "Lre_100p . py \"S1ay",
     "category": "UNKNOWN",
     "score": 0.0,
     "times_played": 0,
-    "times_selected": 0
+    "times_selected": 0,
+    "cost": 1
   },
   "3430000000000000": {
-    "name": "",
+    "name": "EditNOtes",
     "category": "UNKNOWN",
     "score": 0.0,
     "times_played": 0,
-    "times_selected": 0
+    "times_selected": 0,
+    "cost": 1
   },
   "0f0c000000000000": {
     "name": "",
@@ -94,11 +88,12 @@
     "times_selected": 0
   },
   "343179b964687074": {
-    "name": "",
+    "name": "工 ク ス プ ロ ー ラ ー",
     "category": "UNKNOWN",
     "score": 0.0,
     "times_played": 0,
-    "times_selected": 0
+    "times_selected": 0,
+    "cost": 1
   },
   "0515130b0a120a02": {
     "name": "",
@@ -115,20 +110,6 @@
     "times_selected": 0
   },
   "0606060606060606": {
-    "name": "",
-    "category": "UNKNOWN",
-    "score": 0.0,
-    "times_played": 0,
-    "times_selected": 0
-  },
-  "2a006e8100000000": {
-    "name": "",
-    "category": "UNKNOWN",
-    "score": 0.0,
-    "times_played": 0,
-    "times_selected": 0
-  },
-  "f580c08080a9aeba": {
     "name": "",
     "category": "UNKNOWN",
     "score": 0.0,
@@ -259,14 +240,16 @@
     "category": "UNKNOWN",
     "score": 0.0,
     "times_played": 0,
-    "times_selected": 0
+    "times_selected": 0,
+    "cost": 2
   },
   "9495a29202605018": {
-    "name": "",
-    "category": "UNKNOWN",
+    "name": "ト ラ イ ク",
+    "category": "ATTACK",
     "score": 0.0,
     "times_played": 0,
-    "times_selected": 0
+    "times_selected": 0,
+    "cost": 1
   },
   "c6426bb5b8da55b4": {
     "name": "",
@@ -275,19 +258,13 @@
     "times_played": 0,
     "times_selected": 0
   },
-  "00000c0020536467": {
-    "name": "",
-    "category": "UNKNOWN",
-    "score": 0.0,
-    "times_played": 0,
-    "times_selected": 0
-  },
   "00000000005c001c": {
-    "name": "",
+    "name": "/for actlons",
     "category": "UNKNOWN",
     "score": 0.0,
     "times_played": 0,
-    "times_selected": 0
+    "times_selected": 0,
+    "cost": 1
   },
   "00e0e060200000c0": {
     "name": "",
@@ -296,15 +273,2474 @@
     "times_played": 0,
     "times_selected": 0
   },
-  "620040a000000000": {
+  "f000000000000000": {
+    "name": ")lre  \"",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0,
+    "cost": 2
+  },
+  "004c5ada7c6c3d35": {
+    "name": "",
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 3,
+    "times_selected": 0
+  },
+  "00000071716101e3": {
     "name": "",
     "category": "UNKNOWN",
     "score": 0.0,
     "times_played": 0,
     "times_selected": 0
   },
-  "f000000000000000": {
+  "0006868d8d958694": {
     "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "00b03834343c0800": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "0121c7c3c7a7c525": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "5c5e46c7663e343c": {
+    "name": "",
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 3,
+    "times_selected": 0
+  },
+  "7160604452326273": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "47e7830686c6c68f": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "343c183038343838": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "e1c5c64667e5e1e7": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "8112062508585060": {
+    "name": "",
+    "category": "DEFEND",
+    "score": 3.2,
+    "times_played": 9,
+    "times_selected": 1
+  },
+  "32b2264465b57f1f": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "4141c1c1403c4f6b": {
+    "name": "防 御 紅",
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0,
+    "cost": 3
+  },
+  "c1cfdff8e1b19d93": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "21212060a0c938b8": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "32b226466696ffcf": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "414151714945cc0c": {
+    "name": "防 御",
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0,
+    "cost": 1
+  },
+  "213199949888004c": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "315188482495a2b2": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "3232264447cffc5b": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "49416161f8e19cdc": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "213199941c0cc087": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "8112062488585060": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 3.2,
+    "times_played": 3,
+    "times_selected": 1
+  },
+  "32b2264447cffc9b": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "61414161f8619cdc": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "213199141c0cc082": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "21110a482495a2b2": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "8112062448585060": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 3.2,
+    "times_played": 3,
+    "times_selected": 1
+  },
+  "32b2264446cffc9b": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "49616161f8619cdc": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "213199945c0cc082": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "211108482495aab2": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "41416161f8619cdc": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "213199941c0cc086": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "8112062508185060": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 3.2,
+    "times_played": 6,
+    "times_selected": 1
+  },
+  "69414161f8619cdc": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "211158c82495aab2": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "8112062408585060": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 3.2,
+    "times_played": 3,
+    "times_selected": 1
+  },
+  "33b32745679d9ddf": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "91a8ac8cc3cec8e1": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "2131191418082200": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "21110a482485aa92": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "32b22644649c9bdf": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "6941416171f1decc": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "2131991418082200": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "81120725080850e0": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 3.2,
+    "times_played": 3,
+    "times_selected": 1
+  },
+  "4149416171f1decc": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "2131999418082200": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "211518882485aab2": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "81120624485850e8": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 3.2,
+    "times_played": 3,
+    "times_selected": 1
+  },
+  "32b2264447cffcdb": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "49416161f8e19dd9": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "21b199941c0cc086": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "211108482495aa92": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "81120625085850e8": {
+    "name": "",
+    "category": "DEFEND",
+    "score": 3.2,
+    "times_played": 1,
+    "times_selected": 1
+  },
+  "dadcdcdcddc0bde2": {
+    "name": "ス ト ラ イ",
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0,
+    "cost": 1
+  },
+  "0f1f9818189cc8dc": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "3118189818fa61e0": {
+    "name": "防 御",
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0,
+    "cost": 1
+  },
+  "311198482485aa92": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "1b1605bbed6b5995": {
+    "name": "ひ 、 デ ッ キ ー",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 5,
+    "times_selected": 0,
+    "cost": 1
+  },
+  "9ab84a7652422a37": {
+    "name": "、 ノ ヾ ッ ク か ら に",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 3,
+    "times_selected": 0,
+    "cost": 1
+  },
+  "0e0c0e0e0e0e0e8e": {
+    "name": "",
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 5,
+    "times_selected": 0
+  },
+  "546a283a0c0c0a96": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "65000040e0204830": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "8000000000000064": {
+    "name": "防 御",
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0,
+    "cost": 1
+  },
+  "8c80888888888888": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "3c3c3c1c9c9cdcdc": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 10,
+    "times_selected": 0
+  },
+  "3c3c3c3c9c9cdcdc": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 5,
+    "times_selected": 0
+  },
+  "122528386fd392d5": {
+    "name": "ス ト ラ イ ク ざ",
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 3,
+    "times_selected": 0,
+    "cost": 3
+  },
+  "011d0e0f7290d883": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "85820df8219d5943": {
+    "name": "",
+    "category": "ATTACK",
+    "score": 0.2,
+    "times_played": 5,
+    "times_selected": 1
+  },
+  "804000c4c501e066": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "2c323ac2aee0e10f": {
+    "name": "ス ト ラ イ",
+    "category": "ATTACK",
+    "score": 0.2,
+    "times_played": 3,
+    "times_selected": 1,
+    "cost": 1
+  },
+  "d6d6f2e6f29cd4d6": {
+    "name": "ス ト ラ ー 溶 岩 石",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 3,
+    "times_selected": 0,
+    "cost": 1
+  },
+  "d6d6f6f6f2dcd4d6": {
+    "name": "ス ト ラ - 溶 岩 石",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 3,
+    "times_selected": 0,
+    "cost": 1
+  },
+  "d6d6f2e2f29cd4d6": {
+    "name": "ス ト ラ - 溶 岩 石",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 9,
+    "times_selected": 0,
+    "cost": 1
+  },
+  "d6d6f6e6f29cd4d6": {
+    "name": "ス ト ラ - 溶 岩 石",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 3,
+    "times_selected": 0,
+    "cost": 1
+  },
+  "d7d4f2e3f2dcd4d6": {
+    "name": "ス ト ラ - 溶 岩 石",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 3,
+    "times_selected": 0,
+    "cost": 1
+  },
+  "d6d4f2e772dcd4d6": {
+    "name": "ス ト ラ ー 溶 岩 石",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 3,
+    "times_selected": 0,
+    "cost": 1
+  },
+  "3024207173736b6f": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "858809111430291b": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "c2e2eae28b991835": {
+    "name": "防 御",
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0,
+    "cost": 1
+  },
+  "6171715141cd0d9a": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "a58809111434291b": {
+    "name": "",
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 5,
+    "times_selected": 0
+  },
+  "caa2eaea8b991835": {
+    "name": "防 御",
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0,
+    "cost": 1
+  },
+  "414a8a8224462999": {
+    "name": "",
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 2,
+    "times_selected": 0
+  },
+  "61434a6a42c6a78d": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "30b0b0a4243434e4": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "100a0809080a4242": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "88caa4c4c2524162": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "c6969696e79f3462": {
+    "name": "ス ト フ ・",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 3,
+    "times_selected": 0,
+    "cost": 2
+  },
+  "4272723241434af5": {
+    "name": "ス ト ラ イ ノ 2",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0,
+    "cost": 3
+  },
+  "2221399818801880": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "4b899c044948dc36": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "42c296c484844e18": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "61416161416161c9": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "1014101010140484": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "119448488485d2c5": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "42c484080b1a181d": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 3,
+    "times_selected": 0
+  },
+  "2125253133ff7e8a": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "4151715145cd0d9a": {
+    "name": "防 御",
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0,
+    "cost": 1
+  },
+  "5253611139006134": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "8ca4444223391b12": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "4b8394446948dc36": {
+    "name": "",
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 3,
+    "times_selected": 0
+  },
+  "42c286c484864e18": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "41416161414161c9": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "1014101214148684": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "119448488484d2c5": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "30355541e82b2be0": {
+    "name": "ス ト ラ イ ク",
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 3,
+    "times_selected": 0,
+    "cost": 1
+  },
+  "4b8394044948d436": {
+    "name": "",
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 3,
+    "times_selected": 0
+  },
+  "42c296c484c44e58": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "41416161416961c9": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "1014101010148684": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "4b8394044948dc36": {
+    "name": "",
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 3,
+    "times_selected": 0
+  },
+  "42c296c484844e58": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "61416161614161c9": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "1014101010148484": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "0000000810210000": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "0098446d0d171612": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "000000040582cdd1": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "4d9d61a1096c68e0": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "00004041010904a6": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 9,
+    "times_selected": 0
+  },
+  "00004041010104a6": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 4,
+    "times_selected": 0
+  },
+  "00004040010104a6": {
+    "name": "",
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "6597e9e995d16121": {
+    "name": "実 績 覧 一",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "3a0c61791b0e3230": {
+    "name": "年 代 記 き れ . 宀",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "706f484a4a624a86": {
+    "name": "設 定",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "a4a6b190a0c8c444": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "a6166a6991516120": {
+    "name": "実 績 覧 一",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "3185e9ab0f47f6a6": {
+    "name": "年 代 記 宀",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 1,
+    "times_selected": 0
+  },
+  "1a0ff7a71a3ae8e9": {
+    "name": "・ 一 設 定 績 「",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "914961201c198891": {
+    "name": "終 了",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "d3578b563c1c31d7": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "aca825aca52ae5c0": {
+    "name": "嶼 見 . ,",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "31215965b1d27128": {
+    "name": "実 績 覧 一",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "a860aaa319063033": {
+    "name": "年 代 記",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "6592b12128142c80": {
+    "name": "終 了",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "2906122230234965": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "50d6d4929ed69572": {
+    "name": "績 覧 一",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "1706586430393129": {
+    "name": "実 績 覧 一",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "a8102a231b07b3b3": {
+    "name": "年 代 記",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 1,
+    "times_selected": 0
+  },
+  "641b3921281c2c80": {
+    "name": "終 了",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "2b0793a317064864": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "50d6d49296d69572": {
+    "name": "績 覧",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "f4fe5a653f1c3128": {
+    "name": "実 績 覧",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "a8342a22fbfb7374": {
+    "name": "年 代 記",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "ebf77371f4be4865": {
+    "name": "設 結",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "50d6d4929e969572": {
+    "name": "績 覧",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "e860286bf1790600": {
+    "name": "ス キ ル",
+    "cost": 1,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "0400888c5c5361a8": {
+    "name": "防 御",
+    "cost": 1,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "f38e7bc98ddb6ba1": {
+    "name": "防 御",
+    "cost": 1,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "c10f808e3e67c181": {
+    "name": "ス ト ラ イ ク",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "3ca3fb6871190600": {
+    "name": "ア タ ッ ク",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "969ffdecc5cfa7f2": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "f2ba6aaa22220000": {
+    "name": "い",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 1,
+    "times_selected": 0
+  },
+  "3f38f374fccca9a3": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "f98e798d851e6445": {
+    "name": "ス ト ラ イ ク",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "fe3c64cc74661c04": {
+    "name": "ア タ ッ ク",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "f88f130a396dc70c": {
+    "name": "ス ト ラ イ イ",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "3ea2fe6c781e0604": {
+    "name": "ア タ ッ ク",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "e420b8e8733b0000": {
+    "name": "ス キ ル",
+    "cost": 1,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "dbfff88a8e8f6be3": {
+    "name": "ア セ ン ダ ー の",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "e89276919b2f4f8a": {
+    "name": "ス ト ラ イ ク ム",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "6f45d9ccd1410f07": {
+    "name": "ア タ ッ ク",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "e861286bf1790e06": {
+    "name": "ス を ル",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "7847888c8c5361ac": {
+    "name": "防 御",
+    "cost": 1,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "9c3a6493bb6fce8a": {
+    "name": "ス ト ラ イ ク ム",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 1,
+    "times_selected": 0
+  },
+  "7e45888c8c5361ac": {
+    "name": "防 御",
+    "cost": 1,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "813fe85036095383": {
+    "name": "ア セ ン ダ ー の 災 厄",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "e860286bf1790e06": {
+    "name": "ス キ ル",
+    "cost": 1,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "0144cc8c8e5360ac": {
+    "name": "防 御",
+    "cost": 1,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "004d1d8f45442904": {
+    "name": "",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 2,
+    "times_selected": 0
+  },
+  "02a0b0f0b4942080": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "cc1c16010d890001": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "8080d43632321021": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "0106828343400022": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "f38d7dcc85d16ca4": {
+    "name": "防 御",
+    "cost": 1,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "c3f2e4ec32260000": {
+    "name": "",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 1,
+    "times_selected": 0
+  },
+  "13ff8639c9ccd4a9": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "caf2ec2c70669e0c": {
+    "name": "ス キ ル",
+    "cost": 1,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "803a87903b6bca08": {
+    "name": "防 御",
+    "cost": 1,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "30b1f36070390000": {
+    "name": "ア タ ッ ク 。",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "708e818c7c1eb725": {
+    "name": "強 打",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "f13fec8e8e5a60aa": {
+    "name": ")lre  \"",
+    "cost": 2,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 1,
+    "times_selected": 0
+  },
+  "c1f9eb6b71618f1d": {
+    "name": "ス ル",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "0cf1a8062a0f61c3": {
+    "name": "ス ト ラ イ ク",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "7d69d8cc71610e04": {
+    "name": "ア タ ッ ク",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "3033f8e871790600": {
+    "name": "ア タ ッ ク",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "04448c8c0c1fb5a5": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "7f3deaaaa21961c0": {
+    "name": "防 御",
+    "cost": 1,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "777978cc75610e10": {
+    "name": "ア タ ッ ク",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "7061d9c871790604": {
+    "name": "ア タ ッ ク",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "00448c8c0c3f36a4": {
+    "name": "強",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "e21ded8c8658452c": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "c3fbea2b71639f00": {
+    "name": "ス キ ル",
+    "cost": 1,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 1,
+    "times_selected": 0
+  },
+  "2fe3500a511dc585": {
+    "name": "ス ト ラ イ ク の",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "e9615953e37b0b00": {
+    "name": "ス を ル",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "7c47898d5d5365ad": {
+    "name": "防 御",
+    "cost": 1,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "c018c28c3c6683a1": {
+    "name": "ス ト ラ イ ク",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "fc5c34ec64000000": {
+    "name": "ア タ ッ ク 、",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 1,
+    "times_selected": 0
+  },
+  "3f78f3946ccc69e3": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "f98e798d851f6544": {
+    "name": "ス ト ラ イ ク",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "71478a885d5565ac": {
+    "name": "防 御",
+    "cost": 1,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "3c84f36070390000": {
+    "name": "ア タ ッ ク 。",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "79478a885d5565ac": {
+    "name": "防 御",
+    "cost": 1,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "ff8679cdc63665c5": {
+    "name": "ス ト ラ イ ク",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "f38d7dcc84d16da5": {
+    "name": "",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 1,
+    "times_selected": 0
+  },
+  "c2f2e4ec32260000": {
+    "name": "ス キ ル",
+    "cost": 1,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 1,
+    "times_selected": 0
+  },
+  "3f78f3946ccce9e3": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "eb632a6af27a0e06": {
+    "name": "ス キ ル",
+    "cost": 1,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "79478b885d5565ac": {
+    "name": "防 御",
+    "cost": 2,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "fc2cb9f9684c0c0c": {
+    "name": "ア タ ッ ク",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "71478b885d5565ac": {
+    "name": "防 御",
+    "cost": 2,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "fd827dcd853764c4": {
+    "name": "ス ト ラ イ ク  、",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 1,
+    "times_selected": 0
+  },
+  "0062cc8c8cdb536c": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "e8e0692b71600e06": {
+    "name": "ス キ ル",
+    "cost": 1,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "00448c8c0c1fb5a5": {
+    "name": "強",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "0c72cc8c8cdb536c": {
+    "name": "防 御",
+    "cost": 1,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "fdfd74d8e4000000": {
+    "name": "ア タ ッ ク 、",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "c21eed8d8d5b412c": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "fd5d34ec64000000": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "e21eed8d8d5b412c": {
+    "name": "防 御",
+    "cost": 1,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "f9827dcd853764c4": {
+    "name": "ス ト ラ イ ク  、",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "e9e1692b71610f07": {
+    "name": "ス キ ル",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 1,
+    "times_selected": 0
+  },
+  "0000a7d7c5000000": {
+    "name": "ン ク の ダ メ ー ジ が  竓",
+    "cost": 3,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "3c21f8e871790600": {
+    "name": "ア タ ッ ク",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "a0347c9292ac51da": {
+    "name": "ス ト",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "7e41a8a23a67c180": {
+    "name": "ス ト ラ イ ク",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "f11e7aca829a7262": {
+    "name": "ス ト ラ イ ク",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "fe3a72e872660000": {
+    "name": "ア タ ッ ク",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 1,
+    "times_selected": 0
+  },
+  "1773cd8d8d1637ae": {
+    "name": "強 打",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "0107834267666430": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "e16129ebf3790300": {
+    "name": "ス キ ル",
+    "cost": 1,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "7c87898ddd5360ad": {
+    "name": "防 御",
+    "cost": 1,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "fcb868d8c0000000": {
+    "name": "ア タ ッ ク",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "e4238b8e8aaabb92": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 1,
+    "times_selected": 0
+  },
+  "79478a885d5565ad": {
+    "name": "防 御",
+    "cost": 1,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "f8b868d8c0000000": {
+    "name": "ア タ ッ ク ; 、",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "71478a885d5565ad": {
+    "name": "防 御",
+    "cost": 1,
+    "category": "DEFEND",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "02a0b0f0b4952180": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "cc1c160125b13001": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "185a0c4825222020": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 1,
+    "times_selected": 0
+  },
+  "11538000a1410100": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "2072280024243004": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "0040101080800080": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "e0dd204024040000": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 1,
+    "times_selected": 0
+  },
+  "1abe000588880000": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "d0d0108000102000": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "2256400021092000": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "daf2022020240400": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "0000040608080080": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "080c8a8c8c0c1818": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "0810000040400000": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "081a1829b1613984": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "081a1829b57d399f": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "081a1829d14ffcd9": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "0c0c0e0c0c1c1c18": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "0c4d6b6af8e18cda": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "0d4d6b6a2a4a29b9": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "0d4d6b6a32e00ccc": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "0d5171324ac50e1b": {
+    "name": "",
+    "cost": 2,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "0d696a2af8e08cda": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "0d696a2af8e18cda": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "10352362c49452d2": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "10352362c494d892": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "162263b1b0d45134": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "18352362c4945092": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "18353262c4945292": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "2400000000000000": {
+    "name": "FOLDERS\\GAME\\SPIRE",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "4201000082228101": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "488a0e8d0a010101": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "4c4d6b2af8e08cda": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "4c4d6b6af8e18cda": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "4c55733208c50e1b": {
+    "name": "",
+    "cost": 2,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "5028808080400101": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "90352362c49452d2": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "949542525202030a": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "949542525262139a": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "9495a29242405018": {
+    "name": "ト ラ イ ク",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "9495a29242605018": {
+    "name": "ト ラ イ ク",
+    "cost": 1,
+    "category": "ATTACK",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "a0e0f0e0f0f0e0e0": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "ab8a9255757466e6": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "ab8ad255757466e6": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "b0e0f0f0f0f0f0e0": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "c281002042622121": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "c4424bb1b0da5934": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "c4426bb1b0d85534": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "c4426bb1b0da5934": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "c46263b1b0da5934": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "c6436b35b8da51b4": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "d64263b1b0da5134": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "d66263b1b0d85134": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "d66263b1b0da5134": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "e0e0f0f0f0f0e060": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "e201000022222161": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "e201002042222121": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "e241000022222101": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "f0e0f0f0f0f0e1e0": {
+    "name": ")lre  \"",
+    "cost": 2,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "f0e0f0f0f0f1e1e0": {
+    "name": ")lre  \"",
+    "cost": 2,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "3478797b7a736d6c": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "b879393838393130": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "3c3879797a7a6e6c": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "b879793838313130": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "347c79797a7b766c": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "3839793030393131": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "38787d7a7a7a6e6c": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "3879797938313930": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "383c79797a6a6a6c": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "b879397938393130": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "3c397d7b7a6b6e6c": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "0000000000000080": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "b879393030393130": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "3c387d7b7a6a6c6c": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "b879393838313130": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "3879797a7a666c69": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "0000000000004080": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "3878797b7a72676c": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "0000000000004000": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "3839793838313130": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "7878797a7a73666c": {
+    "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "b879397838313139": {
+    "name": "",
+    "cost": 1,
     "category": "UNKNOWN",
     "score": 0.0,
     "times_played": 0,

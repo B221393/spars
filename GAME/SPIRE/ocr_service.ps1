@@ -81,6 +81,9 @@ while ($true) {
                 
                 # Convert output to JSON and then base64 encode it to prevent console encoding issues
                 $json = $output | ConvertTo-Json -Compress
+                if ($null -eq $json -or $json -eq "") {
+                    $json = "[]"
+                }
                 $bytes = [System.Text.Encoding]::UTF8.GetBytes($json)
                 $b64 = [System.Convert]::ToBase64String($bytes)
                 [System.Console]::WriteLine("OK:" + $b64)

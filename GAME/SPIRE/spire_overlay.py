@@ -53,13 +53,11 @@ class AppleGoogleHUDWidget:
         self.root.attributes("-topmost", True)
         self.root.attributes("-alpha", 0.96)
         
-        # Geometry: 340x220, anchored in bottom-right corner (just above taskbar)
+        # Geometry: 340x220, anchored in top-left corner to avoid blocking gameplay elements
         self.width = 340
         self.height = 220
-        screen_w = self.root.winfo_screenwidth()
-        screen_h = self.root.winfo_screenheight()
-        x = screen_w - self.width - 25
-        y = screen_h - self.height - 70
+        x = 25
+        y = 25
         self.root.geometry(f"{self.width}x{self.height}+{x}+{y}")
         
         # Load switchboard

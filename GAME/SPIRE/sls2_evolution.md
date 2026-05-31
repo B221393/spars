@@ -426,3 +426,7 @@
 - 11:30:47 [DIAGNOSIS] CHARACTER_SELECT始動失敗。原因推理: Disabled (LLM Bottleneck Diagnosis is off)
 - 08:47:46 [DIAGNOSIS] CHARACTER_SELECT始動失敗。原因推理: Disabled (LLM Bottleneck Diagnosis is off)
 - 14:30:22 [DIAGNOSIS] MAIN_MENU始動失敗。原因: Disabled (LLM Bottleneck Diagnosis is off)
+- 18:48:20 [DIAGNOSIS] MAIN_MENU始動失敗。原因: Disabled (LLM Bottleneck Diagnosis is off)
+- 18:49:48 [DIAGNOSIS] MAIN_MENU始動失敗。原因: Disabled (LLM Bottleneck Diagnosis is off)
+- 18:50:38 [DIAGNOSIS] MAIN_MENU始動失敗。原因: Disabled (LLM Bottleneck Diagnosis is off)
+- 18:51:35 [DIAGNOSIS] MAIN_MENU始動失敗。原因: Disabled (LLM Bottleneck Diagnosis is off)

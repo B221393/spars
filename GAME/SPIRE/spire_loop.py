@@ -438,7 +438,7 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100000):
                     time.sleep(0.3)
                     scroll_map('down', ticks=30)
                     time.sleep(2.0)
-                    scroll_map('up', ticks=30)
+                    scroll_map('up', ticks=45)
                     time.sleep(1.0)
                     map_scroll_initialized = True
                 except Exception as e:
@@ -1252,32 +1252,24 @@ Tell me the exact text label of the most logical button or option I should click
                                 break
                                 
                 if not clicked_successfully:
-                    print("❌ [MAP] Smart Map and CV nodes failed. Trying random click fallback...")
-                    body.click_and_verify((int(w * 0.5), int(h * 0.7)), "Map Random Click Fallback")
-                    time.sleep(0.4)
+                    print("❌ [MAP] Smart Map and CV nodes failed. Attempting to scroll map down to find active starting/bottom nodes...")
+                    scroll_map('up', ticks=15)
+                    time.sleep(1.0)
                 
             elif state == "REWARD":
-                # Card selection screen: crop options and pick best choice
-                reward_coords = eye.get_reward_card_coords()
+                # Differentiate between Reward List Screen and Card/Relic Choice Screen
+                w, h = eye.window_size
+                words = eye.get_all_text_coords(frame)
                 
-                if not reward_coords:
-                    # No reward cards detected — look for Skip/Proceed button via OCR
-                    print("⚠️ [Reward] No reward card coordinates detected. Looking for Skip/Proceed...")
-                    words = eye.get_all_text_coords(frame)
-                    skip_coord = None
-                    for w_data in words:
-                        txt = w_data['text'].lower().replace(" ", "")
-                        if any(kw in txt for kw in ["スキップ", "skip", "進む", "proceed", "続ける", "ボウル", "bowl"]):
-                            skip_coord = (w_data['x'] + w_data['w']//2, w_data['y'] + w_data['h']//2)
-                            print(f"🎯 [Reward] Found skip/proceed: '{w_data['text']}' at {skip_coord}")
-                            break
-                    if skip_coord:
-                        body.confirm_and_push(skip_coord, "Reward Skip Button", eye)
-                    else:
-                        w, h = eye.window_size
-                        body.click_position((int(w * 0.50), int(h * 0.75)), "Reward Fallback Skip")
-                    time.sleep(0.4)
-                else:
+                # Check for horizontal side-by-side layout in the middle height region to identify Choice Screens
+                middle_words = [wd for wd in words if 0.30 <= (wd['y'] + wd['h']//2)/h <= 0.70]
+                has_left_option = any((wd['x'] + wd['w']//2)/w < 0.38 for wd in middle_words)
+                has_right_option = any((wd['x'] + wd['w']//2)/w > 0.62 for wd in middle_words)
+                is_choice_screen = has_left_option and has_right_option
+                
+                if is_choice_screen:
+                    print("🎁 [Reward] Choice Screen detected (horizontal options side-by-side).")
+                    reward_coords = eye.get_reward_card_coords()
                     reward_hashes = []
                     for coord in reward_coords:
                         crop = eye.crop_card_at(frame, coord)
@@ -1305,10 +1297,56 @@ Tell me the exact text label of the most logical button or option I should click
                         chosen_hash = reward_hashes[choice_idx] if choice_idx < len(reward_hashes) else None
                         if chosen_hash and chosen_hash not in selected_card_hashes:
                             selected_card_hashes.append(chosen_hash)
-                        body.click_position(chosen_coord, f"Reward Card Option {choice_idx}")
+                        body.click_position(chosen_coord, f"Reward Choice Option {choice_idx}")
                     else:
-                        body.click_position(reward_coords[0], "Reward Card Option 0 (Fallback)")
+                        body.click_position(reward_coords[0], "Reward Choice Option 0 (Fallback)")
                     time.sleep(0.4)
+                else:
+                    # Reward List Screen (vertical items to claim)
+                    print("🎁 [Reward] Reward List Screen detected (vertical items to claim).")
+                    reward_items = []
+                    for w_data in words:
+                        cx = w_data['x'] + w_data['w'] // 2
+                        cy = w_data['y'] + w_data['h'] // 2
+                        x_pct = cx / w
+                        y_pct = cy / h
+                        
+                        # Reward items are centered vertically stacked (X: 35% to 65%, Y: 22% to 76%)
+                        if 0.35 <= x_pct <= 0.65 and 0.22 <= y_pct <= 0.76:
+                            text_clean = w_data['text'].strip().lower()
+                            if text_clean and not any(kw in text_clean for kw in ["報酬", "reward", "凡例", "マップ", "legend"]):
+                                reward_items.append((w_data, (cx, cy)))
+                                
+                    # Sort items from top to bottom
+                    reward_items.sort(key=lambda x: x[0]['y'])
+                    
+                    if reward_items:
+                        # Click the first unclaimed reward row
+                        target_w, target_coord = reward_items[0]
+                        print(f"🎁 [Reward List] Claiming item '{target_w['text']}' at {target_coord}")
+                        body.click_position(target_coord, f"Reward List Item ({target_w['text']})")
+                        time.sleep(1.5) # Wait for animation/screen load
+                    else:
+                        # No reward items left, click Proceed/Skip button to exit
+                        print("🎁 [Reward List] No rewards left. Looking for exit Proceed/Skip button...")
+                        skip_coord = None
+                        for w_data in words:
+                            txt = w_data['text'].lower().replace(" ", "")
+                            cx = w_data['x'] + w_data['w'] // 2
+                            cy = w_data['y'] + w_data['h'] // 2
+                            x_pct = cx / w
+                            y_pct = cy / h
+                            if x_pct > 0.50 and y_pct > 0.75:
+                                if any(kw in txt for kw in ["スキップ", "skip", "進む", "proceed", "続ける", "continue", "戻る", "確認", "ok"]):
+                                    skip_coord = (cx, cy)
+                                    print(f"🎯 [Reward List] Found exit button: '{w_data['text']}' at {skip_coord}")
+                                    break
+                        if skip_coord:
+                            body.confirm_and_push(skip_coord, "Reward List Exit Button", eye)
+                        else:
+                            print("⚠️ [Reward List] Exit button not found. Clicking default Proceed coordinate...")
+                            body.click_position((int(w * 0.85), int(h * 0.85)), "Reward List Fallback Exit")
+                        time.sleep(0.4)
 
             elif state == "MAIN_MENU":
                 print("🔍 [Vision] MAIN_MENUまたはシングルプレイサブメニュー画面 of 文字を解析してボタンを探します...")

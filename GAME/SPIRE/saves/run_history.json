@@ -108,5 +108,27 @@
     "max_floor": 2,
     "selected_cards": [],
     "timestamp": "14:47:35"
+  },
+  {
+    "victory": false,
+    "max_floor": 10,
+    "selected_cards": [
+      "3726202422000422",
+      "999a839189858381",
+      "e0dd148444948454"
+    ],
+    "timestamp": "18:57:07"
+  },
+  {
+    "victory": false,
+    "max_floor": 2,
+    "selected_cards": [],
+    "timestamp": "13:00:30"
+  },
+  {
+    "victory": false,
+    "max_floor": 2,
+    "selected_cards": [],
+    "timestamp": "13:14:41"
   }
 ]

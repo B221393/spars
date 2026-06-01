@@ -855,13 +855,19 @@ Do not include any explanation, markdown formatting, or punctuation. Output ONLY
         for c in contours:
             area = cv2.contourArea(c)
             min_area = (h * w) * 0.0001
-            max_area = (h * w) * 0.002
+            max_area = (h * w) * 0.0025
             if min_area <= area <= max_area:
-                M = cv2.moments(c)
-                if M["m00"] != 0:
-                    cx = int(M["m10"] / M["m00"]) + x_start
-                    cy = int(M["m01"] / M["m00"]) + y_start
-                    nodes.append((cx, cy))
+                # Filter out connecting lines and noise using bounding rect aspect ratio & solidity (compactness)
+                rx, ry, rw, rh = cv2.boundingRect(c)
+                aspect_ratio = float(rw) / rh
+                if 0.5 <= aspect_ratio <= 2.0:
+                    solidity = float(area) / (rw * rh)
+                    if solidity >= 0.35:
+                        M = cv2.moments(c)
+                        if M["m00"] != 0:
+                            cx = int(M["m10"] / M["m00"]) + x_start
+                            cy = int(M["m01"] / M["m00"]) + y_start
+                            nodes.append((cx, cy))
                     
         # Sort nodes from bottom to top (Y descending)
         nodes = sorted(nodes, key=lambda n: n[1], reverse=True)

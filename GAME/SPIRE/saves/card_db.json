@@ -1,11 +1,11 @@
 {
   "0000000000000000": {
+    "name": ")lre  \"",
+    "cost": 2,
     "category": "UNKNOWN",
-    "score": 0.2,
-    "times_played": 24,
-    "times_selected": 1,
-    "name": "",
-    "cost": 1
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
   },
   "0081805958008100": {
     "category": "UNKNOWN",
@@ -236,8 +236,8 @@
     "times_selected": 0
   },
   "4c55733248c50e1b": {
-    "name": "",
-    "category": "UNKNOWN",
+    "name": "strike",
+    "category": "ATTACK",
     "score": 0.0,
     "times_played": 0,
     "times_selected": 0,
@@ -2259,9 +2259,9 @@
     "times_selected": 0
   },
   "0d5171324ac50e1b": {
-    "name": "",
+    "name": "strike",
     "cost": 2,
-    "category": "UNKNOWN",
+    "category": "ATTACK",
     "score": 0.0,
     "times_played": 0,
     "times_selected": 0
@@ -2363,9 +2363,9 @@
     "times_selected": 0
   },
   "4c55733208c50e1b": {
-    "name": "",
+    "name": "strike",
     "cost": 2,
-    "category": "UNKNOWN",
+    "category": "ATTACK",
     "score": 0.0,
     "times_played": 0,
     "times_selected": 0
@@ -2750,9 +2750,9 @@
     "name": "",
     "cost": 1,
     "category": "UNKNOWN",
-    "score": 0.0,
+    "score": 2.0,
     "times_played": 1,
-    "times_selected": 0
+    "times_selected": 1
   },
   "e0dd148450149455": {
     "name": "",
@@ -2790,9 +2790,9 @@
     "name": "",
     "cost": 1,
     "category": "UNKNOWN",
-    "score": 0.0,
+    "score": 2.0,
     "times_played": 1,
-    "times_selected": 0
+    "times_selected": 1
   },
   "2256a33321b56331": {
     "name": "",
@@ -2822,9 +2822,9 @@
     "name": "",
     "cost": 1,
     "category": "UNKNOWN",
-    "score": 0.0,
+    "score": 2.0,
     "times_played": 1,
-    "times_selected": 0
+    "times_selected": 1
   },
   "1abe9607070e8a8c": {
     "name": "",
@@ -2852,6 +2852,14 @@
   },
   "daf2a0a02020a020": {
     "name": "",
+    "cost": 1,
+    "category": "UNKNOWN",
+    "score": 0.0,
+    "times_played": 0,
+    "times_selected": 0
+  },
+  "e8d6494ac3a4a0a0": {
+    "name": "に 戦 う ポ ス カ 、",
     "cost": 1,
     "category": "UNKNOWN",
     "score": 0.0,

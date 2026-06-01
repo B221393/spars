@@ -217,17 +217,19 @@ def log_and_visualize_current_location(frame, save_data, eye, best_visited_cv, n
             
             nodes = eye.detect_map_nodes(frame)
             best_cv_node = None
-            min_x_dist = 9999.0
-            y_min = ny_pct - 0.04
-            y_max = ny_pct + 0.04
+            min_y_dist = 9999.0
+            y_min = ny_pct - 0.05
+            y_max = ny_pct + 0.05
             for nx, ny in nodes:
                 cv_x_pct = nx / cw
                 cv_y_pct = ny / ch
                 if y_min <= cv_y_pct <= y_max:
-                    x_dist = abs(cv_x_pct - nx_pct)
-                    if x_dist < 0.08 and x_dist < min_x_dist:
-                        min_x_dist = x_dist
-                        best_cv_node = (nx, ny)
+                    estimated_col = round((cv_x_pct - 0.25) * 12.0)
+                    if estimated_col == ncol:
+                        y_dist = abs(cv_y_pct - ny_pct)
+                        if y_dist < min_y_dist:
+                            min_y_dist = y_dist
+                            best_cv_node = (nx, ny)
                         
             draw_x, draw_y = (best_cv_node if best_cv_node else (est_nx, est_ny))
             

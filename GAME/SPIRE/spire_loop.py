@@ -1108,10 +1108,12 @@ Tell me the exact text label of the most logical button or option I should click
                                         cv_y_pct = ny / eye.capture_size[1] if (hasattr(eye, 'capture_size') and eye.capture_size) else ny / 1600
                                         
                                         if 0.48 <= cv_y_pct <= 0.68:
-                                            dist = abs(cv_x_pct - curr_x_pct)
-                                            if dist < 0.08 and dist < min_v_dist:
-                                                min_v_dist = dist
-                                                best_visited_cv = (nx, ny)
+                                            estimated_col = round((cv_x_pct - 0.25) * 12.0)
+                                            if estimated_col == curr_col:
+                                                dist = abs(cv_y_pct - curr_y_pct)
+                                                if dist < min_v_dist:
+                                                    min_v_dist = dist
+                                                    best_visited_cv = (nx, ny)
                                                 
                                     if best_visited_cv:
 
@@ -1207,24 +1209,26 @@ Tell me the exact text label of the most logical button or option I should click
                                             curr_y_pct_detected = vny / frame.shape[0]
                                             
                                         expected_y_pct = curr_y_pct_detected - 0.08 - (row_diff - 1) * 0.13
-                                        y_min = expected_y_pct - 0.04
-                                        y_max = expected_y_pct + 0.04
+                                        y_min = expected_y_pct - 0.05
+                                        y_max = expected_y_pct + 0.05
                                         fallback_y = expected_y_pct
                                     
                                     # Search matching CV node
                                     nodes = eye.detect_map_nodes(frame)
                                     best_cv_node = None
-                                    min_x_dist = 9999.0
+                                    min_y_dist = 9999.0
                                     
                                     for nx, ny in nodes:
                                         cv_x_pct = nx / eye.capture_size[0] if (hasattr(eye, 'capture_size') and eye.capture_size) else nx / 2560
                                         cv_y_pct = ny / eye.capture_size[1] if (hasattr(eye, 'capture_size') and eye.capture_size) else ny / 1600
                                         
                                         if y_min <= cv_y_pct <= y_max:
-                                            x_dist = abs(cv_x_pct - x_pct)
-                                            if x_dist < 0.08:
-                                                if x_dist < min_x_dist:
-                                                    min_x_dist = x_dist
+                                            # Map CV x_pct to logical column (0-6)
+                                            estimated_col = round((cv_x_pct - 0.25) * 12.0)
+                                            if estimated_col == target_col:
+                                                y_dist = abs(cv_y_pct - fallback_y)
+                                                if y_dist < min_y_dist:
+                                                    min_y_dist = y_dist
                                                     best_cv_node = (nx, ny)
                                                 
                                     if best_cv_node:

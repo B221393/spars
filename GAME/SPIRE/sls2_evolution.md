@@ -430,3 +430,12 @@
 - 18:49:48 [DIAGNOSIS] MAIN_MENU始動失敗。原因: Disabled (LLM Bottleneck Diagnosis is off)
 - 18:50:38 [DIAGNOSIS] MAIN_MENU始動失敗。原因: Disabled (LLM Bottleneck Diagnosis is off)
 - 18:51:35 [DIAGNOSIS] MAIN_MENU始動失敗。原因: Disabled (LLM Bottleneck Diagnosis is off)
+- 18:52:20 [DIAGNOSIS] MAIN_MENU始動失敗。原因: Disabled (LLM Bottleneck Diagnosis is off)
+- 18:53:08 [DIAGNOSIS] MAIN_MENU始動失敗。原因: Disabled (LLM Bottleneck Diagnosis is off)
+- 18:53:44 [DIAGNOSIS] MAIN_MENU始動失敗。原因: Disabled (LLM Bottleneck Diagnosis is off)
+- 18:54:21 [DIAGNOSIS] MAIN_MENU始動失敗。原因: Disabled (LLM Bottleneck Diagnosis is off)
+- 18:54:58 [DIAGNOSIS] MAIN_MENU始動失敗。原因: Disabled (LLM Bottleneck Diagnosis is off)
+- 18:56:39 [DIAGNOSIS] MAIN_MENU始動失敗。原因: Disabled (LLM Bottleneck Diagnosis is off)
+- 2026/06/01 [MILESTONE] 👁️ SLSW (Slay the Spire Watcher) implemented. External click monitoring enabled.
+- 2026/06/01 [SYSTEM] SLSW integrated into SpireBody. Self-calibration loop online. AI now corrects systemic DPI/resolution offsets using click feedback.
+- 2026/06/01 [STRATEGY] Moving towards "Direct Control" mod to bypass vision latency for card plays.

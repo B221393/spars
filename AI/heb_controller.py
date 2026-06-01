@@ -11,6 +11,7 @@ from PIL import Image
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from CORE.ai_driver import AIDriver
+from CORE.smart_automator import SmartAutomator, bot_action
 
 class Eye:
     """
@@ -50,13 +51,20 @@ class Eye:
         return hash_before != hash_after
 
 
-class Body:
+class Body(SmartAutomator):
     """
     💪 The Physical Action Executor Layer.
     Responsible for translating coordinates into human-like cursor movements and keyboard strokes.
+    Inherits robust click automation, calibration offsets, GDI overlays, and watermelon-splitting guide.
     """
-    def __init__(self, driver: AIDriver):
-        self.driver = driver
+    def __init__(self, driver: AIDriver, save_dir=None, learning=None, human_observer=None, cache_manager=None):
+        super().__init__(
+            driver=driver,
+            save_dir=save_dir,
+            learning=learning,
+            human_observer=human_observer,
+            cache_manager=cache_manager
+        )
 
     def move_to(self, x: int, y: int):
         """Moves cursor along a smooth cubic Bezier curve (human-like speed profiles)"""

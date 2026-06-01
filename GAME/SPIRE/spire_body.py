@@ -38,7 +38,7 @@ class SpireBody:
         print(f"💪 [Body] {message}")
 
     def log_coordinate_event(self, action, intended, actual, offset, label):
-        """Logs and outputs targeted (intended) vs. actual clicked coordinates."""
+        """Logs and outputs targeted (intended) vs. actual clicked coordinates with a Suika-wari directional guide."""
         dx = actual[0] - intended[0]
         dy = actual[1] - intended[1]
         
@@ -47,6 +47,32 @@ class SpireBody:
         print(f"  📍 Intended target: ({intended[0]}, {intended[1]})")
         print(f"  🖱️ Actual click:   ({actual[0]}, {actual[1]})")
         print(f"  ⚖️ Offset/Error:   (dx: {dx}, dy: {dy})")
+        
+        # Suika-wari (Watermelon splitting) directional guide
+        # (intended is target, actual is click. So if dx > 0, click was to the right of target, target is to the left)
+        dist = (dx**2 + dy**2)**0.5
+        guide_msg = ""
+        if dist <= 12:
+            guide_msg = "🎯 【スイカ割りガイド】ほぼ命中！ドンピシャです！"
+        else:
+            x_guide = ""
+            if dx > 10:
+                x_guide = "左"
+            elif dx < -10:
+                x_guide = "右"
+                
+            y_guide = ""
+            if dy > 10:
+                y_guide = "上"
+            elif dy < -10:
+                y_guide = "下"
+                
+            direction = y_guide + x_guide # e.g. "右上", "左", "下"
+            
+            strength = "もっともっと大きく" if dist > 120 else ("もう少し" if dist < 35 else "もっと")
+            guide_msg = f"🍉 【スイカ割りガイド】{strength}{direction}へ！ （実際のクリック位置から見て、標的は {direction} 方向に {int(dist)}px 離れています）"
+            
+        print(guide_msg)
         
         # Log to file for analysis/corrections
         log_dir = os.path.join(BASE_DIR, "saves")
@@ -65,7 +91,8 @@ class SpireBody:
             "error_dy": dy,
             "offset_ox": offset[0],
             "offset_oy": offset[1],
-            "label": label
+            "label": label,
+            "guide": guide_msg
         }
         
         # Read existing or create new list
@@ -87,7 +114,7 @@ class SpireBody:
                 json.dump(log_entries, hf, indent=2)
             
             with open(log_path, "a", encoding="utf-8") as lf:
-                lf.write(f"[{timestamp}] {action:<18} | Target: ({intended[0]:>4}, {intended[1]:>4}) | Click: ({actual[0]:>4}, {actual[1]:>4}) | Diff: ({dx:>3}, {dy:>3}) | {label}\n")
+                lf.write(f"[{timestamp}] {action:<18} | Target: ({intended[0]:>4}, {intended[1]:>4}) | Click: ({actual[0]:>4}, {actual[1]:>4}) | Diff: ({dx:>3}, {dy:>3}) | {label} | {guide_msg}\n")
         except Exception as e:
             print(f"⚠️ [Coordinate Log] Failed to save coordinate log: {e}")
 

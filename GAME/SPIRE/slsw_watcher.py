@@ -3,6 +3,13 @@ import sys
 import time
 import json
 import threading
+
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+except AttributeError:
+    pass
+
 from pynput import mouse
 import win32gui
 import win32process

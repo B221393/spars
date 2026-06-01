@@ -99,6 +99,38 @@ STANDARD_CARDS = {
     "curse": "CURSE", "呪い": "CURSE"
 }
 
+# Cards that exhaust themselves or other cards (廃棄能力を持つカード)
+# Used by tactics to prioritize exhaust when curses/statuses are in hand
+EXHAUST_CARDS = {
+    # Ironclad
+    "true grit", "トゥルーグリット", "不屈",
+    "fiend fire", "悪魔の炎",
+    "sever soul", "ソウルシバー",
+    "corruption", "堕落",
+    "feed", "捕食",
+    "impervious", "無敵",
+    "offering", "血の捧げもの",
+    "burning pact", "燃焼契約",
+    "sentinel", "歩哨",
+    "exhume", "発掘",
+    "second wind", "再起",
+    "havoc", "大暴れ",
+    # Silent
+    "calculated gamble", "計算された賭け",
+    "expertise", "専門知識",
+    "unload", "アンロード",
+    "endless agony", "終わりなき苦悶",
+    # Defect
+    "recycle", "リサイクル",
+    "beam cell", "ビームセル",
+    "hyperbeam", "ハイパービーム",
+    # Watcher
+    "blasphemy", "冒涜",
+    "lesson learned", "学んだ教訓",
+    "talk to the hand", "手に語る",
+    "alpha", "アルファ",
+}
+
 import re
 
 def parse_card_cost_and_clean_name(ocr_name):
@@ -150,6 +182,17 @@ def guess_card_category(ocr_name):
             return v
             
     return "UNKNOWN"
+
+def is_exhaust_card(card_name):
+    """Check if a card has exhaust capability (can remove cards from the game)."""
+    if not card_name:
+        return False
+    normalized = re.sub(r'[\s\u3000\uff0c\u3001;、]', '', card_name).lower().strip()
+    for exhaust_name in EXHAUST_CARDS:
+        exhaust_normalized = re.sub(r'[\s\u3000\uff0c\u3001;、]', '', exhaust_name).lower()
+        if exhaust_normalized and (exhaust_normalized in normalized or normalized in exhaust_normalized):
+            return True
+    return False
 
 
 

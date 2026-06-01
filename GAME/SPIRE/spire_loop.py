@@ -103,6 +103,9 @@ from spire_body import SpireBody
 from spire_learning import HumanObserver, STANDARD_CARDS, parse_card_cost_and_clean_name, guess_card_category
 from CORE.ai_driver import AIDriver
 
+import spire_utils as utils
+from spire_brain import SpireBrain
+
 def scan_and_hash_hand_cards(eye, frame, elements, tactics):
     card_hashes = []
     for coord in elements.get("cards", []):
@@ -121,112 +124,20 @@ def scan_and_hash_hand_cards(eye, frame, elements, tactics):
         card_hashes.append(chash)
     return card_hashes
 
-def write_reflection(base_dir, loop_count, current_state):
-
-
-    saves_dir = os.path.join(base_dir, "saves")
-    os.makedirs(saves_dir, exist_ok=True)
-    reflection_file = os.path.join(saves_dir, "evolution_reflections.md")
-    
-    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-    
-    if current_state == "COMBAT":
-        good = "マウス座標の1:1マッピング（DPI対応）が正常に動作し、戦闘画面が安定して進行中。"
-        problem = "敵インテントやカードのOCRスキャンでわずかなI/Oオーバーヘッドがある。"
-        try_text = "カード特徴量のキャッシュ効率を最大化し、高速なリフレックス動作を維持する。"
-    elif current_state == "REST_SITE":
-        good = "キャンプファイヤー状態を検知し、休憩選択の物理入力を実行。"
-        problem = "フェード遷移時の画面静止キャッシュが長めに判定される場合がある。"
-        try_text = "変異検出のしきい値を調整し、フェードアウト後の最速クリックを狙う。"
-    elif current_state == "CHARACTER_SELECT":
-        good = "デイリーチャレンジおよびキャラ選択画面の文字を検出し、確定チェックマークへのマッピングに成功。"
-        problem = "フォーカスが外れた場合、安全装置が正しく機能するがループが待機に入る。"
-        try_text = "ユーザーがエディタ操作中でも背後でゲームを実行できるよう、非フォーカス時の入力手段をさらに検証する。"
-    elif current_state == "MAIN_MENU":
-        good = "メインメニュー画面を検知し、シングルプレイボタンを押下。"
-        problem = "ゲームの起動状態やサイズ変更によってボタン座標がずれる可能性があったが、DPI修正により改善。"
-        try_text = "OCRテキストマッチングを第一優先とし、ボタン座標を動的に決定し続ける。"
-    else:
-        good = f"現在のゲーム状態 {current_state} を安定して検知。"
-        problem = "未知の画面による判定保留が発生しやすい。"
-        try_text = "Gemma4のCPU診断をバイパスしつつ、フォールバッククリック座標の精度を高める。"
-        
-    log_entry = f"""
-## 🧠 [{timestamp}] 反省会 (サイクル {loop_count})
-- **現在の状態 (State)**: `{current_state}`
-- **良かったこと (Good)**: {good}
-- **反省点 (Problem)**: {problem}
-- **改善案 (Try)**: {try_text}
-"""
-    
-    first_write = not os.path.exists(reflection_file)
-    with open(reflection_file, "a", encoding="utf-8") as f:
-        if first_write:
-            f.write("# 🧠 AI 協働進化・反省会ログ (Evolution Reflections)\n")
-            f.write("このファイルは、AIが1分ごとに自動運転の成果、反省点、および次の改善案を振り返るログです。\n\n")
-        f.write(log_entry)
-    print(f"📝 [Reflection] evolution_reflections.md に反省会を記録しました。")
-
-def save_state_analysis(base_dir, state, frame, eye):
-    if frame is None:
-        return
-
-
-
-    analysis_dir = os.path.join(base_dir, "saves", "state_analysis")
-    os.makedirs(analysis_dir, exist_ok=True)
-    
-    timestamp = time.strftime("%Y%m%d_%H%M%S")
-    img_name = f"{state}_{timestamp}.png"
-    html_name = f"{state}_{timestamp}.html"
-    
-    img_path = os.path.join(analysis_dir, img_name)
-    html_path = os.path.join(analysis_dir, html_name)
-    
-    # Save screenshot
-    try:
-        cv2.imwrite(img_path, frame)
-        print(f"📸 [Analysis] Saved screenshot for state {state} to saves/state_analysis/{img_name}")
-    except Exception as e:
-        print(f"⚠️ [Analysis] Failed to save screenshot: {e}")
-        
-    # Generate and save pseudo-HTML
-    try:
-        pseudo_html = eye.generate_pseudo_html(frame)
-        with open(html_path, "w", encoding="utf-8") as f:
-            f.write(pseudo_html)
-        print(f"📄 [Analysis] Saved pseudo-HTML for state {state} to saves/state_analysis/{html_name}")
-    except Exception as e:
-        print(f"⚠️ [Analysis] Failed to save pseudo-HTML: {e}")
-
-def load_current_run_save():
-    """Reads the current run's save file dynamically using glob."""
-
-
-
-    try:
-        paths = glob.glob(r"C:\Users\yu_ci\AppData\Roaming\SlayTheSpire2\steam\*\profile1\saves\current_run.save")
-        if not paths:
-            return None
-        latest_path = max(paths, key=os.path.getmtime)
-        with open(latest_path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception as e:
-        print(f"⚠️ [SaveParser] Error loading save file: {e}")
-        return None
-
-def scroll_map(direction, ticks=10):
-    """Scrolls the mouse wheel in the given direction (up/down) to scroll the map."""
-    import win32api
-    import win32con
-
-    import random
-    val = 120 if direction == 'up' else -120
-    print(f"🖱️ [Scroll] Scrolling map {direction} ({ticks} ticks)...")
-    for _ in range(ticks):
-        win32api.mouse_event(win32con.MOUSEEVENTF_WHEEL, 0, 0, val, 0)
-        time.sleep(random.uniform(0.03, 0.06))
-    time.sleep(0.5)
+def parse_energy_from_ocr(words):
+    """OCRテキストリストからエネルギー (X/Y形式、X,Y<=9) を読み取る"""
+    for w_data in words:
+        text = w_data['text'].strip()
+        match = re.search(r'(\d+)/(\d+)', text)
+        if match:
+            try:
+                val1 = int(match.group(1))
+                val2 = int(match.group(2))
+                if val1 <= 9 and val2 <= 9:
+                    return val1
+            except:
+                pass
+    return None
 
 def launch_game_if_needed():
     import win32gui
@@ -259,6 +170,165 @@ def launch_game_if_needed():
                 print(f"⚠️ [System] Steam launch failed: {e}")
         time.sleep(8.0) # Wait for launch resources
 
+def try_claim_central_reward(body, eye):
+    """
+    Attempts to click central screen coordinates where relics, chests, or card packs appear.
+    Returns True if a click caused a screen change (meaning a reward was claimed or chest opened),
+    False if no rewards were claimed.
+    """
+    w, h = eye.window_size
+    # Target points in logical coordinates: center (relic/chest), left-center (boss relic 1 / card pack 1),
+    # right-center (boss relic 3 / card pack 2), center-middle (boss relic 2)
+    reward_coords = [
+        (int(w * 0.50), int(h * 0.45)),  # Single relic / Chest
+        (int(w * 0.40), int(h * 0.50)),  # Left option (Boss relic 1 / Card pack 1)
+        (int(w * 0.60), int(h * 0.50)),  # Right option (Boss relic 3 / Card pack 2)
+        (int(w * 0.50), int(h * 0.50)),  # Center option (Boss relic 2)
+    ]
+    
+    for coord in reward_coords:
+        x_pct = coord[0] / w
+        y_pct = coord[1] / h
+        if body.learning and body.learning.is_failed_click("REWARD_CHECK", x_pct, y_pct):
+            continue
+            
+        before = body._capture_small()
+        if before is None:
+            continue
+            
+        print(f"🔍 [Reward Check] Clicking potential reward coordinate at {coord}...")
+        body.wait_for_active_window()
+        body.driver.bezier_move(coord[0], coord[1])
+        time.sleep(0.1)
+        body.driver.hardware_click(coord[0], coord[1])
+        
+        # Wait and verify screen change
+        time.sleep(0.3)
+        after = body._capture_small()
+        diff = body._pixel_diff(before, after)
+        print(f"🔍 [Reward Check] Screen diff: {diff:.2f}")
+        
+        if diff >= 7.0:
+            print(f"🎁 [Reward Check] Succeeded! Screen changed (diff={diff:.2f}). Claimed reward or opened chest at {coord}.")
+            eye.last_frame_small = None
+            eye.static_cycles_count = 0
+            return True
+        else:
+            if body.learning:
+                body.learning.record_failed_click("REWARD_CHECK", x_pct, y_pct)
+                
+    return False
+
+def log_and_visualize_current_location(frame, save_data, eye, best_visited_cv, next_coords, scored_next, points):
+    """
+    Saves a debug screenshot of the map screen showing the current location (red circle)
+    and the valid next moves (green circles) with their scores, and logs the current status.
+    """
+    if frame is None:
+        return
+        
+    try:
+        annotated_frame = frame.copy()
+        current_node_desc = "Start of Act (No visited nodes yet)"
+        visited = []
+        
+        if save_data:
+            visited = save_data.get('visited_map_coords', [])
+            if visited:
+                curr_node = visited[-1]
+                col = curr_node.get('col', 0)
+                row = curr_node.get('row', 0)
+                node_type = "unknown"
+                for p in points:
+                    if p.get('coord') == curr_node:
+                        node_type = p.get('type', 'unknown')
+                        break
+                current_node_desc = f"Row {row}, Column {col} (Type: {node_type})"
+                
+        ch, cw, _ = frame.shape
+        
+        if best_visited_cv:
+            cv2.circle(annotated_frame, best_visited_cv, 25, (0, 0, 255), 4) # Red BGR
+            cv2.putText(annotated_frame, "YOU ARE HERE", (best_visited_cv[0] - 80, best_visited_cv[1] - 35),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        else:
+            if save_data and visited:
+                curr_node = visited[-1]
+                col = curr_node.get('col', 0)
+                curr_x_pct = 0.25 + 0.50 * (col / 6.0)
+                curr_y_pct = 0.58
+                est_x = int(cw * curr_x_pct)
+                est_y = int(ch * curr_y_pct)
+                cv2.circle(annotated_frame, (est_x, est_y), 25, (0, 0, 255), 4)
+                cv2.putText(annotated_frame, "YOU ARE HERE (EST)", (est_x - 100, est_y - 35),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                            
+        print(f"🗺️ [Map Visualizer] Next choices to draw: {scored_next}")
+        for next_coord_data, n_type, score in scored_next:
+            ncol = next_coord_data.get('col', 0)
+            nrow = next_coord_data.get('row', 0)
+            nx_pct = 0.25 + 0.50 * (ncol / 6.0)
+            
+            if not visited:
+                ny_pct = 0.91
+            else:
+                curr_row = visited[-1].get('row', 0)
+                row_diff = nrow - curr_row
+                curr_y_pct_detected = 0.58
+                if best_visited_cv:
+                    curr_y_pct_detected = best_visited_cv[1] / ch
+                ny_pct = curr_y_pct_detected - 0.08 - (row_diff - 1) * 0.13
+                
+            est_nx = int(cw * nx_pct)
+            est_ny = int(ch * ny_pct)
+            
+            nodes = eye.detect_map_nodes(frame)
+            best_cv_node = None
+            min_x_dist = 9999.0
+            y_min = ny_pct - 0.04
+            y_max = ny_pct + 0.04
+            for nx, ny in nodes:
+                cv_x_pct = nx / cw
+                cv_y_pct = ny / ch
+                if y_min <= cv_y_pct <= y_max:
+                    x_dist = abs(cv_x_pct - nx_pct)
+                    if x_dist < 0.08 and x_dist < min_x_dist:
+                        min_x_dist = x_dist
+                        best_cv_node = (nx, ny)
+                        
+            draw_x, draw_y = (best_cv_node if best_cv_node else (est_nx, est_ny))
+            
+            cv2.circle(annotated_frame, (draw_x, draw_y), 20, (0, 255, 0), 3) # Green BGR
+            label_text = f"{n_type} (Score: {score})"
+            cv2.putText(annotated_frame, label_text, (draw_x - 60, draw_y - 25),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                        
+        saves_dir = os.path.join(BASE_DIR, "saves")
+        os.makedirs(saves_dir, exist_ok=True)
+        img_path = os.path.join(saves_dir, "map_current_location.png")
+        cv2.imwrite(img_path, annotated_frame)
+        print(f"📸 [Map Visualizer] Saved annotated map screen to: saves/map_current_location.png")
+        
+        log_path = os.path.join(saves_dir, "map_current_location.txt")
+        log_text = f"""=========================================
+Slay the Spire 2 Map Status Log
+=========================================
+Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}
+Current Node: {current_node_desc}
+Next Valid Paths:
+"""
+        for next_coord_data, n_type, score in scored_next:
+            ncol = next_coord_data.get('col', 0)
+            nrow = next_coord_data.get('row', 0)
+            log_text += f"- Col {ncol}, Row {nrow} (Type: {n_type}, Priority Score: {score})\n"
+            
+        with open(log_path, "w", encoding="utf-8") as f:
+            f.write(log_text)
+        print(f"📝 [Map Visualizer] Wrote location details to: saves/map_current_location.txt")
+        
+    except Exception as e:
+        print(f"⚠️ [Map Visualizer] Failed to create map visualization: {e}")
+
 def run_spire_automator(target_title="Slay the Spire", max_loops=100000):
     global PENDING_CARD_PLAY
     print("🎵 Starting Autonomous Slay the Spire Infinite Loop (SPIRE)...")
@@ -274,9 +344,6 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100000):
 
 
     
-    # Launch game if not running
-    launch_game_if_needed()
-    
     # Initialize Core HEB components
     driver = AIDriver(target_title, log_dir=BASE_DIR)
     
@@ -291,11 +358,19 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100000):
                 break
                 
     if not driver.hwnd:
-        print(f"❌ Error: Slay the Spire window not found! Autoplay stopped. (Tried targeting: '{target_title}')")
-        sys.exit("Error: Slay the Spire window not found!")
+        print("🔍 Slay the Spire window not found! Waiting for game to be launched manually...")
+        while not driver.hwnd:
+            time.sleep(2.0)
+            for title in ["Slay the Spire 2", "Slay the Spire"]:
+                driver.target_title = title
+                if driver.connect():
+                    target_title = title
+                    print(f"✅ Bound to game window: '{title}'")
+                    break
         
     eye = SpireEye(driver)
     tactics = SpireTactics()
+    brain = SpireBrain(eye, None, tactics)
     
     # Run startup pre-scanning of card templates in database folder
     tactics.learning.initialize_card_categories(eye=eye)
@@ -310,6 +385,8 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100000):
     cache_manager.start()
     
     body = SpireBody(driver, human_observer, cache_manager, learning=tactics.learning)
+    # Re-link brain to body with the now-initialized body
+    brain.body = body
     
     loop_count = 0
     consecutive_unknowns = 0
@@ -328,12 +405,11 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100000):
             except Exception:
                 pass
 
-            # Check window connection — 再接続を最大10回試みる
+            # Check window connection — 再接続を試みる（自動起動は行いません）
             if not driver.check_connection() or not driver.hwnd:
                 print("⚠️ Slay the Spire ウィンドウが見つかりません。再接続を試みます...")
-                launch_game_if_needed()
                 reconnected = False
-                for attempt in range(10):
+                for attempt in range(30):
                     _orig_sleep(2.0)
                     for title in ["Slay the Spire 2", "Slay the Spire"]:
                         driver.target_title = title
@@ -343,10 +419,17 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100000):
                             break
                     if reconnected:
                         break
-                    print(f"  再接続試行 {attempt+1}/10...")
+                    print(f"  再接続試行 {attempt+1}/30...")
                 if not reconnected:
-                    print("❌ 再接続失敗。Autoplay 停止。")
-                    sys.exit("Error: Slay the Spire window connection lost!")
+                    print("❌ 再接続できませんでした。ゲームウィンドウが起動されるのを待機します...")
+                    while not reconnected:
+                        _orig_sleep(5.0)
+                        for title in ["Slay the Spire 2", "Slay the Spire"]:
+                            driver.target_title = title
+                            if driver.connect():
+                                print(f"✅ 接続成功: '{title}'")
+                                reconnected = True
+                                break
 
 
             loop_count += 1
@@ -393,7 +476,7 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100000):
                     continue
 
             # Load current run save data
-            save_data = load_current_run_save()
+            save_data = utils.load_current_run_save()
             relics = []
             if save_data and "players" in save_data and save_data["players"]:
                 relics = save_data["players"][0].get("relics", [])
@@ -402,6 +485,14 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100000):
             frame = eye.grab_screen()
             state = eye.detect_game_state(frame)
             print(f"👁️ Detected Game State: {state}")
+            
+            # --- Visual Debug Trigger (Photo Analysis Mode) ---
+            if state != last_state or state == "UNKNOWN":
+                words = eye.get_all_text_coords(frame)
+                elements = eye.locate_combat_elements(frame) if state == "COMBAT" else {}
+                vis_path = eye.visualize_sight(frame, words, elements, state)
+                if vis_path:
+                    print(f"📸 [Vision] Analysis Map saved to: assets/debug_sight.png (State: {state})")
             
             # --- Deck Size Tracker ---
             if save_data and "players" in save_data and save_data["players"]:
@@ -424,21 +515,22 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100000):
                         tactics.learning.clear_failed_clicks(prev_hash)
                 else:
                     tactics.learning.clear_failed_clicks(last_state)
+                tactics.learning.clear_failed_clicks("REWARD_CHECK")
                     
                 try:
-                    save_state_analysis(BASE_DIR, state, frame, eye)
+                    utils.save_state_analysis(BASE_DIR, state, frame, eye)
                 except Exception as ex:
                     print(f"⚠️ [Analysis] Error in state analysis: {ex}")
             
             if state == "MAP" and not map_scroll_initialized:
-                print("🗺️ [Map Transition] Entered MAP screen. Performing path inspection scroll...")
+                print("🗺️ [Map Transition] Entered MAP screen. Performing path inspection scroll (Top then Bottom)...")
                 try:
                     w, h = eye.window_size
                     body.driver.bezier_move(int(w * 0.5), int(h * 0.5))
                     time.sleep(0.3)
-                    scroll_map('down', ticks=30)
+                    utils.scroll_map('down', ticks=60) # Scroll all the way to the top (boss)
                     time.sleep(2.0)
-                    scroll_map('up', ticks=45)
+                    utils.scroll_map('up', ticks=80) # Scroll all the way back to the bottom (start)
                     time.sleep(1.0)
                     map_scroll_initialized = True
                 except Exception as e:
@@ -449,7 +541,7 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100000):
             # --- 1分ごとの反省会ログ記録 ---
             if time.time() - last_reflection_time >= 60.0:
                 try:
-                    write_reflection(BASE_DIR, loop_count, state)
+                    utils.write_reflection(BASE_DIR, loop_count, state)
                 except Exception as e:
                     print(f"⚠️ [Reflection] Failed to write reflection: {e}")
                 last_reflection_time = time.time()
@@ -535,6 +627,9 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100000):
                             break
                 
                 if proceed_coord:
+                    # Before pushing Proceed, check if there is an unclaimed central reward (relic/chest/pack)
+                    if utils.try_claim_central_reward(body, eye):
+                        continue
                     logical_coord = eye.to_logical(proceed_coord)
                     print(f"🎯 [Priority Proceed] Detected '{proceed_text}' on screen at {proceed_coord} -> logical {logical_coord}. Clicking immediately!")
                     success, reason = body.confirm_and_push(logical_coord, f"Priority Proceed Click OCR ({proceed_text})", eye)
@@ -548,6 +643,9 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100000):
                         print("⚠️ [Priority Proceed] Click on Proceed button failed. Continuing to state-specific handling.")
 
             if state in ["UNKNOWN", "EVENT"]:
+                # Before selecting dialogue options, check if there is a central reward to claim
+                if utils.try_claim_central_reward(body, eye):
+                    continue
                 # [王道原理] まず記憶（イベント辞書）を探る
                 screen_hash = tactics.learning.get_screen_hash(eye.last_frame_small)
                 human_observer.set_current_screen_hash(screen_hash)
@@ -731,21 +829,9 @@ Tell me the exact text label of the most logical button or option I should click
                 eye.get_all_text_coords(frame)
                 
                 # Read actual energy from OCR
-                actual_energy = None
-
-                for w_data in eye.last_ocr_words:
-                    text = w_data['text'].strip()
-                    match = re.search(r'(\d+)/(\d+)', text)
-                    if match:
-                        try:
-                            val1 = int(match.group(1))
-                            val2 = int(match.group(2))
-                            if val1 <= 9 and val2 <= 9:  # Filter out player HP (e.g. 80/80) and dates (e.g. 2026/05)
-                                actual_energy = val1
-                                print(f"⚡ [OCR] Detected current energy: {actual_energy}")
-                                break
-                        except: pass
-                
+                actual_energy = parse_energy_from_ocr(eye.last_ocr_words)
+                if actual_energy is not None:
+                    print(f"⚡ [OCR] Detected current energy: {actual_energy}")
                 energy = actual_energy if actual_energy is not None else 3
                 cards_played_this_turn = 0
                 
@@ -802,18 +888,7 @@ Tell me the exact text label of the most logical button or option I should click
                         new_frame = eye.grab_screen()
                         if new_frame is not None:
                             new_words = eye.get_all_text_coords(new_frame)
-                            actual_energy = None
-                            for w_data in new_words:
-                                text = w_data['text'].strip()
-                                match = re.search(r'(\d+)/(\d+)', text)
-                                if match:
-                                    try:
-                                        val1 = int(match.group(1))
-                                        val2 = int(match.group(2))
-                                        if val1 <= 9 and val2 <= 9:
-                                            actual_energy = val1
-                                            break
-                                    except: pass
+                            actual_energy = parse_energy_from_ocr(new_words)
                             if actual_energy is not None:
                                 energy = actual_energy
                                 print(f"⚡ [OCR] Energy updated to: {energy}")
@@ -867,10 +942,29 @@ Tell me the exact text label of the most logical button or option I should click
                     player_hp = eye.get_player_hp(eye.last_ocr_words)
                     if player_hp:
                         print(f"❤️ [OCR] Detected player HP: {player_hp[0]}/{player_hp[1]}")
-                    
+
                     player_block = eye.get_player_block_from_ocr(eye.last_ocr_words)
                     print(f"🛡️ [OCR] Detected player block: {player_block} (Incoming enemy damage: {incoming_damage})")
-                    
+
+                    # --- Potion Logic ---
+                    if player_hp and (player_hp[0] / player_hp[1] < 0.40 or (incoming_damage - player_block >= 25)):
+                        potion_coords = eye.get_potion_coords(frame)
+                        if potion_coords:
+                            p_coord = eye.to_logical(potion_coords[0])
+                            print(f"🧪 [Potion] Player in danger! Attempting to use potion at {p_coord}...")
+                            body.click_position(p_coord, "Use Potion")
+                            time.sleep(0.5)
+                            # After clicking potion, we may need to click a target (first enemy)
+                            if elements.get("enemies"):
+                                target = elements.get("enemies")[0]
+                                body.click_position(target, "Potion Target")
+                                time.sleep(0.5)
+                            # Re-scan after potion usage
+                            frame = eye.grab_screen()
+                            eye.get_all_text_coords(frame)
+                            elements = eye.locate_combat_elements(frame, cards_played=cards_played_this_turn)
+                            card_hashes = scan_and_hash_hand_cards(eye, frame, elements, tactics)
+                            continue
                     # Decide action using learning heuristics and passing failed hashes, indices, enemy HPs, statuses, player HP, damage, and block
                     action, p1, p2 = tactics.decide_combat_action(
                         elements, card_hashes, enemy_intents, energy,
@@ -932,18 +1026,7 @@ Tell me the exact text label of the most logical button or option I should click
                             
                             # Re-detect energy from OCR
                             new_words = eye.get_all_text_coords(new_frame)
-                            actual_energy = None
-                            for w_data in new_words:
-                                text = w_data['text'].strip()
-                                match = re.search(r'(\d+)/(\d+)', text)
-                                if match:
-                                    try:
-                                        val1 = int(match.group(1))
-                                        val2 = int(match.group(2))
-                                        if val1 <= 9 and val2 <= 9:
-                                            actual_energy = val1
-                                            break
-                                    except: pass
+                            actual_energy = parse_energy_from_ocr(new_words)
                             if actual_energy is not None:
                                 energy = actual_energy
                                 print(f"⚡ [OCR] Energy updated to: {energy}")
@@ -965,69 +1048,7 @@ Tell me the exact text label of the most logical button or option I should click
                         break
                         
             elif state == "REST_SITE":
-                # Smart campfire decision: Rest vs Upgrade based on HP
-                w, h = eye.window_size
-                words = eye.get_all_text_coords(frame)
-                
-                # Determine HP ratio from save data
-                hp_ratio = 1.0
-                if save_data and "players" in save_data and save_data["players"]:
-                    player = save_data["players"][0]
-                    current_hp = player.get("current_hp", 80)
-                    max_hp = max(1, player.get("max_hp", 80))
-                    hp_ratio = current_hp / max_hp
-                    print(f"🏕️ [Rest Site] HP: {current_hp}/{max_hp} ({hp_ratio:.0%})")
-                
-                # Choose strategy: rest if low HP, upgrade if healthy
-                prefer_rest = hp_ratio < 0.60
-                
-                rest_keywords = ["休憩", "rest", "回復", "heal", "sleep"]
-                upgrade_keywords = ["アップグレード", "upgrade", "強化", "鍛冶", "smith"]
-                
-                rest_coord = None
-                upgrade_coord = None
-                
-                for w_data in words:
-                    txt = w_data['text'].lower().replace(" ", "")
-                    cx = w_data['x'] + w_data['w'] // 2
-                    cy = w_data['y'] + w_data['h'] // 2
-                    if any(kw in txt for kw in rest_keywords):
-                        rest_coord = (cx, cy)
-                    if any(kw in txt for kw in upgrade_keywords):
-                        upgrade_coord = (cx, cy)
-                
-                target_coord = None
-                action_name = ""
-                if prefer_rest and rest_coord:
-                    target_coord = rest_coord
-                    action_name = "Rest (HP Low)"
-                elif not prefer_rest and upgrade_coord:
-                    target_coord = upgrade_coord
-                    action_name = "Upgrade (HP OK)"
-                elif rest_coord:
-                    target_coord = rest_coord
-                    action_name = "Rest (Fallback)"
-                elif upgrade_coord:
-                    target_coord = upgrade_coord
-                    action_name = "Upgrade (Fallback)"
-                else:
-                    # Hardcoded fallback for campfire button area
-                    target_coord = (int(w * 0.50), int(h * 0.55))
-                    action_name = "Campfire Fallback"
-                
-                print(f"🏕️ [Rest Site] Action: {action_name} at {target_coord}")
-                success, reason = body.confirm_and_push(target_coord, f"Rest Site ({action_name})", eye)
-                if success:
-                    print(f"✅ [Rest Site] {action_name} succeeded!")
-                    eye.last_frame_small = None
-                    eye.static_cycles_count = 0
-                else:
-                    # Try the other option if first one failed
-                    alt_coord = upgrade_coord if prefer_rest else rest_coord
-                    if alt_coord and alt_coord != target_coord:
-                        print(f"🔄 [Rest Site] Trying alternative option...")
-                        body.confirm_and_push(alt_coord, "Rest Site (Alternative)", eye)
-                time.sleep(0.4)
+                brain.handle_rest_site(frame, save_data)
                 
             elif state == "MAP":
                 # Map navigation screen
@@ -1131,11 +1152,19 @@ Tell me the exact text label of the most logical button or option I should click
                                         score = 70
                                     elif node_type == 'monster':
                                         score = 50
+                                    elif node_type == 'super_elite':
+                                        score = 60 if hp_ratio >= 0.7 else 10
+                                    elif node_type in ('boss', 'boss_chest'):
+                                        score = 999  # Boss is always the final goal
                                         
                                     scored_next.append((coord, node_type, score))
                                     
                                 scored_next.sort(key=lambda x: x[2], reverse=True)
                                 print(f"🗺️ [Smart Map] Scored next options: {scored_next}")
+                                try:
+                                    log_and_visualize_current_location(frame, save_data, eye, best_visited_cv, next_coords, scored_next, points)
+                                except Exception as e_vis:
+                                    print(f"⚠️ Failed to visualize map location: {e_vis}")
                                 
                                 for target_coord_data, target_type, target_score in scored_next:
                                     target_col = target_coord_data.get('col', 0)
@@ -1231,30 +1260,23 @@ Tell me the exact text label of the most logical button or option I should click
                         print(f"⚠️ [Smart Map] Exception in smart map logic: {ex}")
                         
                 if not clicked_successfully:
-                    print("🗺️ [Smart Map] Fallback: Smart Map pathfinding failed, trying CV fallback map nodes...")
-                    nodes = eye.detect_map_nodes(frame)
-                    if nodes:
-                        for node_coord in nodes:
-                            logical_coord = eye.to_logical(node_coord)
-                            x_pct = logical_coord[0] / w
-                            y_pct = logical_coord[1] / h
-                            if tactics.learning.is_failed_click("MAP", x_pct, y_pct):
-                                continue
-                            print(f"🗺️ [MAP] Clicking detected node at {logical_coord}")
-                            human_observer.bot_is_clicking = True
-                            success = body.click_and_verify(logical_coord, "CV Map Node Fallback", max_shifts=2, shift_px=10, change_threshold=2.0)
-                            human_observer.bot_is_clicking = False
-                            if success:
-                                clicked_successfully = True
-                                eye.last_frame_small = None
-                                eye.static_cycles_count = 0
-                                time.sleep(2.0)
-                                break
-                                
-                if not clicked_successfully:
-                    print("❌ [MAP] Smart Map and CV nodes failed. Attempting to scroll map down to find active starting/bottom nodes...")
-                    scroll_map('up', ticks=15)
-                    time.sleep(1.0)
+                    print("⚠️ [Smart Map] Current location or valid next paths could not be determined from game save files.")
+                    print("🛑 [Smart Map] Blind CV clicking is disabled to prevent the bot from wandering to incorrect rooms.")
+                    try:
+                        saves_dir = os.path.join(BASE_DIR, "saves")
+                        cv2.imwrite(os.path.join(saves_dir, "map_location_error.png"), frame)
+                        print("📸 [Smart Map] Saved error screenshot to: saves/map_location_error.png")
+                    except Exception as e:
+                        print(f"⚠️ Failed to save error screenshot: {e}")
+                        
+                    print("👤 Please click the next map node manually. Waiting for room transition...")
+                    while True:
+                        time.sleep(2.0)
+                        chk_frame = eye.grab_screen()
+                        chk_state = eye.detect_game_state(chk_frame)
+                        if chk_state != "MAP":
+                            print(f"✅ Screen transitioned to state: {chk_state}. Resuming autopilot.")
+                            break
                 
             elif state == "REWARD":
                 # Differentiate between Reward List Screen and Card/Relic Choice Screen
@@ -1263,13 +1285,45 @@ Tell me the exact text label of the most logical button or option I should click
                 
                 # Check for horizontal side-by-side layout in the middle height region to identify Choice Screens
                 middle_words = [wd for wd in words if 0.30 <= (wd['y'] + wd['h']//2)/h <= 0.70]
-                has_left_option = any((wd['x'] + wd['w']//2)/w < 0.38 for wd in middle_words)
-                has_right_option = any((wd['x'] + wd['w']//2)/w > 0.62 for wd in middle_words)
-                is_choice_screen = has_left_option and has_right_option
+                
+                # Check if there is an exit/proceed button at the bottom right
+                has_bottom_right_btn = False
+                for wd in words:
+                    cx = wd['x'] + wd['w'] // 2
+                    cy = wd['y'] + wd['h'] // 2
+                    x_pct = cx / w
+                    y_pct = cy / h
+                    if x_pct > 0.70 and y_pct > 0.75:
+                        txt = wd['text'].lower().replace(" ", "")
+                        if any(kw in txt for kw in ["スキップ", "skip", "進む", "proceed", "続ける", "continue", "戻る", "確認", "ok"]):
+                            has_bottom_right_btn = True
+                            break
+                            
+                has_left_option = any((wd['x'] + wd['w']//2)/w < 0.42 for wd in middle_words)
+                has_right_option = any((wd['x'] + wd['w']//2)/w > 0.58 for wd in middle_words)
+                is_choice_screen = (has_left_option and has_right_option) and not has_bottom_right_btn
                 
                 if is_choice_screen:
                     print("🎁 [Reward] Choice Screen detected (horizontal options side-by-side).")
                     reward_coords = eye.get_reward_card_coords()
+                    
+                    # Refine reward coordinates dynamically using middle_words columns (e.g. for boss relics)
+                    x_coords = [wd['x'] + wd['w']//2 for wd in middle_words]
+                    if len(x_coords) >= 3:
+                        left_group = [x for x in x_coords if x / w < 0.44]
+                        right_group = [x for x in x_coords if x / w > 0.56]
+                        mid_group = [x for x in x_coords if 0.44 <= x / w <= 0.56]
+                        if left_group and right_group and mid_group:
+                            left_x = int(sum(left_group) / len(left_group))
+                            right_x = int(sum(right_group) / len(right_group))
+                            mid_x = int(sum(mid_group) / len(mid_group))
+                            reward_coords = [
+                                (left_x, int(h * 0.50)),
+                                (mid_x, int(h * 0.50)),
+                                (right_x, int(h * 0.50))
+                            ]
+                            print(f"🎁 [Reward] Dynamic columns: Left={left_x/w:.2f}, Mid={mid_x/w:.2f}, Right={right_x/w:.2f}")
+                            
                     reward_hashes = []
                     for coord in reward_coords:
                         crop = eye.crop_card_at(frame, coord)
@@ -1311,10 +1365,14 @@ Tell me the exact text label of the most logical button or option I should click
                         x_pct = cx / w
                         y_pct = cy / h
                         
-                        # Reward items are centered vertically stacked (X: 35% to 65%, Y: 22% to 76%)
-                        if 0.35 <= x_pct <= 0.65 and 0.22 <= y_pct <= 0.76:
+                        # Reward items are centered vertically stacked (X: 25% to 75%, Y: 20% to 75%)
+                        if 0.25 <= x_pct <= 0.75 and 0.20 <= y_pct <= 0.75:
                             text_clean = w_data['text'].strip().lower()
-                            if text_clean and not any(kw in text_clean for kw in ["報酬", "reward", "凡例", "マップ", "legend"]):
+                            # Exclude header labels AND skip/proceed buttons from being treated as reward items
+                            skip_keywords = ["報酬", "reward", "凡例", "マップ", "legend",
+                                             "スキップ", "skip", "進む", "proceed", "続ける", "continue",
+                                             "戻る", "確認", "ok", "次へ", "next"]
+                            if text_clean and not any(kw in text_clean for kw in skip_keywords):
                                 reward_items.append((w_data, (cx, cy)))
                                 
                     # Sort items from top to bottom
@@ -1348,204 +1406,17 @@ Tell me the exact text label of the most logical button or option I should click
                             body.click_position((int(w * 0.85), int(h * 0.85)), "Reward List Fallback Exit")
                         time.sleep(0.4)
 
+            elif state == "SHOP":
+                brain.handle_shop(frame, save_data)
+
             elif state == "MAIN_MENU":
-                print("🔍 [Vision] MAIN_MENUまたはシングルプレイサブメニュー画面 of 文字を解析してボタンを探します...")
-                words = eye.get_all_text_coords(frame)
-                target_coord = None
-                src = ""
-                
-                full_text = " ".join(w['text'].lower() for w in words)
-                full_text_clean = full_text.replace(" ", "").replace("　", "")
-                
-                # Check for "続ける" (Continue) button first to resume saved runs
-                for w_data in words:
-                    text_lower_clean = w_data['text'].lower().replace(" ", "").replace("　", "")
-                    if any(kw in text_lower_clean for kw in ["続ける", "continue"]) and not any(ex in text_lower_clean for ex in ["保存して終了", "settings", "設定"]):
-                        target_coord = (w_data['x'] + w_data['w']//2, w_data['y'] + w_data['h']//2)
-                        src = f"👁️OCRメインメニュー続ける認識 ('{w_data['text']}')"
-                        break
-                
-                if not target_coord:
-                    is_submenu = any(kw in full_text_clean for kw in ["通常", "本日の挑戦", "カスタム", "standard", "daily", "custom"])
-                    
-                    if is_submenu:
-                        print("🔍 [Vision] シングルプレイサブメニューを検知。'通常' ボタンを探します...")
-                        sub_keywords = ["通常", "標準", "standard", "normal", "スタンダード", "スタンタド"]
-                        for w_data in words:
-                            text_lower_clean = w_data['text'].lower().replace(" ", "").replace("　", "")
-                            if any(kw in text_lower_clean for kw in sub_keywords) and not any(ex in text_lower_clean for ex in ["開始", "embark"]):
-                                # If OCR grouped standard, daily, custom together, click standard (left-most third)
-                                if "カスタム" in text_lower_clean and ("スタン" in text_lower_clean or "ディリ" in text_lower_clean or "daily" in text_lower_clean or "standard" in text_lower_clean):
-                                    target_coord = (w_data['x'] + w_data['w']//6, w_data['y'] + w_data['h']//2)
-                                else:
-                                    target_coord = (w_data['x'] + w_data['w']//2, w_data['y'] + w_data['h']//2)
-                                src = f"👁️OCRサブメニュー認識 ('{w_data['text']}')"
-                                break
-                        
-                        if not target_coord:
-                            w, h = eye.window_size
-                            # Fallback for Standard button in STS2 (usually above Daily Challenge which is around 60%, so let's use 52% height)
-                            target_coord = (int(w * 0.405), int(h * 0.52))
-                            src = "📐サブメニューデフォルト (通常)"
-                else:
-                    # キーワードの柔軟なマッチング (部分一致対応) - メインメニューのプレイボタン
-                    keywords = ["play", "single", "start", "プレイ", "シングル", "スタート"]
-                    for w_data in words:
-                        text_lower_clean = w_data['text'].lower().replace(" ", "").replace("　", "")
-                        if any(kw in text_lower_clean for kw in keywords):
-                            target_coord = (w_data['x'] + w_data['w']//2, w_data['y'] + w_data['h']//2)
-                            src = f"👁️OCRメインメニュー認識 ('{w_data['text']}')"
-                            break
-                
-                # OCRが失敗した場合
-                if not target_coord:
-                    print("⚠️ [Vision] OCRでボタンが見つかりません。フォールバック座標を使用します。")
-                    w, h = eye.window_size
-                    import win32gui
-                    try:
-                        win_title = win32gui.GetWindowText(driver.hwnd) if driver.hwnd else ""
-                    except Exception:
-                        win_title = "Slay the Spire 2"
-                    is_sts2 = "2" in win_title
-                    fallback_x = 0.405 if is_sts2 else 0.50
-                    target_coord = (int(w * fallback_x), int(h * 0.64))
-                    src = "📐デフォルト(フォールバック)"
-                
-                # [初速のシステム] 実行と検証
-                before_frame = frame
-                success, reason = body.confirm_and_push(target_coord, f"Main Menu ({src})", eye)
-                
-                if not success:
-                    print("💔 [AI frustrated] Main Menu click had no response! Giving minus penalty.")
-                    screen_hash = tactics.learning.get_screen_hash(eye.last_frame_small)
-                    tactics.learning.record_event_failure(screen_hash, src or "Main Menu")
-                    # 自律診断回路の起動
-                    if ENABLE_LLM_DIAGNOSIS:
-                        after_frame = eye.grab_screen()
-                        diagnosis = eye.diagnose_bottleneck(before_frame, after_frame, f"Click MAIN_MENU at {target_coord}")
-                        print(f"🧠 [Self-Diagnosis]: {diagnosis}")
-                        diag_res = diagnosis
-                    else:
-                        print("⚠️ [System] LLM Bottleneck Diagnosis is disabled. Skipping CPU inference.")
-                        diag_res = "Disabled (LLM Bottleneck Diagnosis is off)"
-                    with open(os.path.join(BASE_DIR, "sls2_evolution.md"), "a", encoding="utf-8") as f:
-                        f.write(f"- {time.strftime('%H:%M:%S')} [DIAGNOSIS] MAIN_MENU始動失敗。原因: {diag_res}\n")
-                    
-                    # 総当たり的な微修正: 座標を少しずらして「初速」を無理やり稼ぐ
-                    print("🔥 [System] 初速獲得のため、周辺領域をスキャン/プッシュします。")
-                    # (ここに追加の総当たりロジックを記述可能)
-                else:
-                    print("🌟 [AI feeling good] Screen transitioned from Main Menu! Feeling extremely pleased!")
-                    eye.last_frame_small = None
-                    eye.static_cycles_count = 0
+                brain.handle_main_menu(frame, driver.hwnd)
                 
             elif state == "CHARACTER_SELECT":
-                print("🔍 [Vision] CHARACTER_SELECT画面の文字を解析してボタンを探します...")
-                words = eye.get_all_text_coords(frame)
-                
-                # 最初にキャラクターを選択（まだ選ばれていない場合にクリック）
-                char_names = ["アイアンクラッド", "アイアンクラド", "サイレント", "ディフェクト", "ウォッチャー", "ネクロバインダー", "ironclad", "silent", "defect", "watcher", "necrobinder"]
-                for w_data in words:
-                    text_clean = w_data['text'].lower().replace(" ", "").replace("　", "")
-                    if any(cn in text_clean for cn in char_names) and len(text_clean) < 15:
-                        char_coord = (w_data['x'] + w_data['w']//2, w_data['y'] + w_data['h']//2)
-                        print(f"👤 [CHARACTER_SELECT] Selecting character by clicking '{w_data['text']}' at {char_coord}")
-                        body.click_position(char_coord, f"Character Card ({w_data['text']})")
-                        time.sleep(1.0)
-                        # Re-grab frame and update word coordinates
-                        frame = eye.grab_screen()
-                        words = eye.get_all_text_coords(frame)
-                        break
-
-                target_coord = None
-                src = ""
-                keywords = ["embark", "proceed", "go", "エンバーク", "出発", "開始"]
-                for w_data in words:
-                    text_lower = w_data['text'].lower()
-                    if any(kw in text_lower for kw in keywords) and "さあ挑戦" not in text_lower and len(w_data['text'].strip()) < 10:
-                        target_coord = (w_data['x'] + w_data['w']//2, w_data['y'] + w_data['h']//2)
-                        src = f"👁️OCR認識 ('{w_data['text']}')"
-                        break
-                
-                if not target_coord:
-                    checkmark_coord = eye.detect_teal_checkmark(frame)
-                    if checkmark_coord:
-                        target_coord = checkmark_coord
-                        src = "📐検知されたチェックマーク"
-                    else:
-                        w, h = eye.window_size
-                        # For STS2 Character Select, the start button is the right check-mark at (0.955, 0.70)
-                        # For STS1, it is at (0.83, 0.85)
-                        import win32gui
-                        try:
-                            win_title = win32gui.GetWindowText(driver.hwnd) if driver.hwnd else ""
-                        except Exception:
-                            win_title = "Slay the Spire 2"
-                        is_sts2 = "2" in win_title
-                        fallback_x = 0.955 if is_sts2 else 0.83
-                        fallback_y = 0.70 if is_sts2 else 0.85
-                        target_coord = (int(w * fallback_x), int(h * fallback_y))
-                        src = "📐STS2確認" if is_sts2 else "📐デフォルト"
-                
-                # [初速のシステム] 実行と検証
-                before_frame = frame
-                success, reason = body.confirm_and_push(target_coord, f"Character Select ({src})", eye)
-                
-                if not success:
-                    print("💔 [AI frustrated] Character Select click had no response! Giving minus penalty.")
-                    screen_hash = tactics.learning.get_screen_hash(eye.last_frame_small)
-                    tactics.learning.record_event_failure(screen_hash, src or "Character Select")
-                    if ENABLE_LLM_DIAGNOSIS:
-                        after_frame = eye.grab_screen()
-                        diagnosis = eye.diagnose_bottleneck(before_frame, after_frame, f"Click CHARACTER_SELECT at {target_coord}")
-                        print(f"🧠 [Self-Diagnosis]: {diagnosis}")
-                        diag_res = diagnosis
-                    else:
-                        print("⚠️ [System] LLM Bottleneck Diagnosis is disabled. Skipping CPU inference.")
-                        diag_res = "Disabled (LLM Bottleneck Diagnosis is off)"
-                    with open(os.path.join(BASE_DIR, "sls2_evolution.md"), "a", encoding="utf-8") as f:
-                        f.write(f"- {time.strftime('%H:%M:%S')} [DIAGNOSIS] CHARACTER_SELECT始動失敗。原因推理: {diag_res}\n")
-                else:
-                    print("🌟 [AI feeling good] Started game from Character Select! Feeling extremely pleased!")
-                    eye.last_frame_small = None
-                    eye.static_cycles_count = 0
+                brain.handle_character_select(frame)
                 
             elif state == "DEFEAT_SCREEN":
-                print("🔍 [Vision] DEFEAT_SCREEN画面の文字を解析してボタンを探します...")
-                words = eye.get_all_text_coords(frame)
-                target_coord = None
-                src = ""
-                keywords = ["return", "main", "quit", "リターン", "戻る", "諦める", "終了"]
-                for w_data in words:
-                    text_lower = w_data['text'].lower()
-                    if any(kw in text_lower for kw in keywords):
-                        target_coord = (w_data['x'] + w_data['w']//2, w_data['y'] + w_data['h']//2)
-                        src = f"👁️OCR認識 ('{w_data['text']}')"
-                        break
-                
-                if not target_coord:
-                    w, h = eye.window_size
-                    human_coord = tactics.learning.get_human_click_coord("DEFEAT_SCREEN", w, h)
-                    target_coord = human_coord if human_coord else (int(w * 0.50), int(h * 0.88))
-                    src = "👤人間学習済み" if human_coord else "📐デフォルト"
-                
-                print(f"🎯 DEFEAT_SCREEN クリック座標: {target_coord} ({src})")
-                human_observer.bot_is_clicking = True
-                changed = body.click_and_verify(target_coord, "Return to Main Menu Button", max_shifts=4, shift_px=20)
-                human_observer.bot_is_clicking = False
-                if changed:
-                    print("🌟 [AI feeling good] Returned to Main Menu! Feeling extremely pleased!")
-                    eye.last_frame_small = None
-                    eye.static_cycles_count = 0
-                    time.sleep(0.4)
-                else:
-                    print("💔 [AI frustrated] Defeat Screen click had no response! Giving minus penalty.")
-                    screen_hash = tactics.learning.get_screen_hash(eye.last_frame_small)
-                    tactics.learning.record_event_failure(screen_hash, src or "Defeat Screen")
-                    print("⚠️ [Loop] DEFEAT_SCREEN click had no effect. Forcing fresh gemma4 query.")
-                    eye.last_frame_small = None
-                    eye.static_cycles_count = 99
-                    time.sleep(0.5)
+                brain.handle_defeat(frame)
 
             elif state == "PAUSE_MENU":
                 print("⏸️ [Pause Menu] ポーズメニューを検知。'再開' ボタンを探してクリックします...")

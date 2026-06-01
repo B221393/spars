@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import re
 import numpy as np
 import requests
 import base64
@@ -187,6 +188,23 @@ Do not include any explanation, markdown formatting, or punctuation. Output ONLY
             self.log(f"Gemma 4 state text check failed: {e}")
         return None
 
+    def get_mcp_state(self):
+        """Attempts to fetch current game state from STS2_MCP mod server on localhost:15526."""
+        import urllib.request
+        import json
+        try:
+            url = "http://localhost:15526/api/v1/singleplayer?format=json"
+            req = urllib.request.Request(url, method="GET")
+            with urllib.request.urlopen(req, timeout=1.0) as response:
+                if response.status == 200:
+                    data = json.loads(response.read().decode('utf-8'))
+                    self.last_mcp_state = data
+                    return data
+        except Exception:
+            pass
+        self.last_mcp_state = None
+        return None
+
     def detect_game_state(self, frame=None):
         """
         Reflexive/Spinal classification of the current screen.
@@ -194,6 +212,45 @@ Do not include any explanation, markdown formatting, or punctuation. Output ONLY
         and state transition memory (< 1ms, 0% CPU).
         Only falls back to OCR on transitions, and local Gemma4 for event dialogues.
         """
+        # Try fetching state from STS2_MCP server first (fastest and 100% accurate)
+        mcp_data = self.get_mcp_state()
+        if mcp_data and "state_type" in mcp_data:
+            state_type = mcp_data["state_type"].lower()
+            
+            mapped_state = None
+            if state_type == "menu":
+                menu_screen = mcp_data.get("menu_screen", "").lower()
+                if "char" in menu_screen:
+                    mapped_state = "CHARACTER_SELECT"
+                else:
+                    mapped_state = "MAIN_MENU"
+            elif state_type == "combat":
+                mapped_state = "COMBAT"
+            elif state_type == "map":
+                mapped_state = "MAP"
+                if frame is not None:
+                    ocr_words = self.get_all_text_coords(frame)
+                    full_txt = "".join(w['text'].lower() for w in ocr_words).replace(" ", "").replace("　", "")
+                    if any(kw in full_txt for kw in ["ネオー", "neow", "復活の母", "るつぼ", "アーキテクト", "最大hp", "ゴールド", "獲得", "カードを", "レリック", "呪い", "ダメージ", "失う"]):
+                        mapped_state = "EVENT"
+            elif state_type in ["event", "dialogue"]:
+                mapped_state = "EVENT"
+            elif state_type == "shop":
+                mapped_state = "SHOP"
+            elif state_type in ["reward", "rewards"]:
+                mapped_state = "REWARD"
+            elif state_type in ["campfire", "rest_site", "rest"]:
+                mapped_state = "REST_SITE"
+            elif state_type in ["game_over", "defeat"]:
+                mapped_state = "DEFEAT_SCREEN"
+            elif state_type == "pause":
+                mapped_state = "PAUSE_MENU"
+                
+            if mapped_state:
+                self.log(f"🔗 [MCP Mod] Detected state via API: {mapped_state} (raw: {state_type})")
+                self.last_llm_state = mapped_state
+                return mapped_state
+
         if not HAS_CV or frame is None:
             return "COMBAT"
 
@@ -225,19 +282,25 @@ Do not include any explanation, markdown formatting, or punctuation. Output ONLY
             detected_state = "PAUSE_MENU"
         elif any(kw in full_text_clean for kw in ["さあ挑戦を始めよう", "挑戦を始めよう", "ディリチャレンジ", "デイリーチャレンジ", "キャラクター選択", "characterselect", "embark", "挑戦を開始", "出発"]):
             detected_state = "CHARACTER_SELECT"
-        elif any(name in full_text_clean for name in ["アイアンクラッド", "アイアンクラド", "サイレント", "ディフェクト", "ウォッチャー", "ネクロバインダー", "ironclad", "silent", "defect", "watcher", "necrobinder"]):
-            if not any(kw in full_text_clean for kw in ["ターン終了", "endturn", "エンドターン"]):
+        elif any(name in full_text_clean for name in ["アイアンクラッド", "アイアンクラド", "サイレント", "ネクロバインダー", "ネクロ", "リージェント", "リージエント", "リジント", "レジェント", "ironclad", "silent", "necrobinder", "regent", "アイアン"]):
+            if not any(kw in full_text_clean for kw in ["ターン終了", "endturn", "エンドターン", "ポーション", "potion"]):
                 detected_state = "CHARACTER_SELECT"
         elif any(kw in full_text_clean for kw in ["シングル", "singleplayer", "マルチプレイ", "multiplayer", "通常", "本日の挑戦", "カスタム", "standard", "dailychallenge", "custom", "年代記", "実績一覧", "設定", "終了", "megacrit", "slaythespire", "spire"]):
             detected_state = "MAIN_MENU"
+        elif any(kw in full_text_clean for kw in ["商人", "購入", "売却", "ショップ", "shop", "merchant", "buy", "purge", "remove", "削除"]):
+            # Confirm it's not just a map node or event mention by checking for price-like digits
+            if any(re.search(r'\d+', w['text']) for w in words if 0.4 < (w['y']/h) < 0.9):
+                detected_state = "SHOP"
+            else:
+                detected_state = "EVENT"
         elif any(kw in full_text_clean for kw in ["ターン終了", "endturn", "エンドターン"]):
             detected_state = "COMBAT"
         elif any(kw in full_text_clean for kw in ["休む", "鍛冶", "rest", "smith"]):
             detected_state = "REST_SITE"
-        elif any(kw in full_text_clean for kw in ["マップ", "凡例", "map", "legend"]):
-            detected_state = "MAP"
         elif any(kw in full_text_clean for kw in ["ネオー", "neow", "アーキテクト", "復活の母", "復ラの母", "轟音", "万華鏡", "るつぼ"]):
             detected_state = "EVENT"
+        elif any(kw in full_text_clean for kw in ["マップ", "凡例", "map", "legend"]):
+            detected_state = "MAP"
         elif any(kw in full_text_clean for kw in ["カードを選択", "報酬", "選択したカードを追加", "cardreward", "take"]):
             detected_state = "REWARD"
         elif any(kw in full_text_clean for kw in ["メインメニューに戻る", "諦める", "defeat", "victory", "returntomain", "敗北", "死亡", "ゲームオーバー"]):
@@ -420,20 +483,25 @@ Do not include any explanation, markdown formatting, or punctuation. Output ONLY
         html_lines.append(f'<screen width="{w}" height="{h}">')
         
         for i, w_data in enumerate(words):
-            cx = w_data['x'] + w_data['w'] // 2
-            cy = w_data['y'] + w_data['h'] // 2
-            x_pct = round(cx / w, 3)
-            y_pct = round(cy / h, 3)
-            text = w_data['text'].strip()
+            x1 = w_data['x']
+            y1 = w_data['y']
+            x2 = w_data['x'] + w_data['w']
+            y2 = w_data['y'] + w_data['h']
             
+            left_pct = round(x1 / w, 3)
+            top_pct = round(y1 / h, 3)
+            right_pct = round(x2 / w, 3)
+            bottom_pct = round(y2 / h, 3)
+            
+            text = w_data['text'].strip()
             if not text:
                 continue
                 
             # Classify: width > height * 2 is likely interactive button/option line
             if w_data['w'] > w_data['h'] * 2:
-                html_lines.append(f'  <button id="{i}" text="{text}" x_pct="{x_pct}" y_pct="{y_pct}" width="{w_data["w"]}" height="{w_data["h"]}" />')
+                html_lines.append(f'  <button id="{i}" text="{text}" left_pct="{left_pct}" top_pct="{top_pct}" right_pct="{right_pct}" bottom_pct="{bottom_pct}" />')
             else:
-                html_lines.append(f'  <text content="{text}" x_pct="{x_pct}" y_pct="{y_pct}" />')
+                html_lines.append(f'  <text content="{text}" left_pct="{left_pct}" top_pct="{top_pct}" right_pct="{right_pct}" bottom_pct="{bottom_pct}" />')
                 
         html_lines.append('</screen>')
         return "\n".join(html_lines)
@@ -457,6 +525,101 @@ Do not include any explanation, markdown formatting, or punctuation. Output ONLY
             x_end = min(w, cx + int(w * 0.04))
         return frame[y_start:y_end, x_start:x_end]
 
+    def visualize_sight(self, frame, words, elements, state="UNKNOWN"):
+        """
+        Generates an annotated screenshot with bounding boxes and labels for all detected elements.
+        Saves to assets/debug_sight.png and returns the path.
+        """
+        if frame is None: return None
+        vis_frame = frame.copy()
+        h, w, _ = frame.shape
+        
+        # 1. Draw all OCR words in blue
+        for wd in words:
+            x, y, ww, hh = wd['x'], wd['y'], wd['w'], wd['h']
+            cv2.rectangle(vis_frame, (x, y), (x + ww, y + hh), (255, 100, 0), 1)
+            # Draw text above (small)
+            txt = wd['text']
+            if len(txt) > 10: txt = txt[:8] + ".."
+            cv2.putText(vis_frame, txt, (x, y - 2), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 150, 0), 1)
+
+        # 2. Draw enemies in red
+        for ex, ey in elements.get("enemies", []):
+            cv2.circle(vis_frame, (ex, ey), 30, (0, 0, 255), 3)
+            cv2.putText(vis_frame, "ENEMY", (ex - 20, ey - 35), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+
+        # 3. Draw hand cards in green
+        for card_coord in elements.get("cards", []):
+            cx, cy = card_coord[:2]
+            cv2.rectangle(vis_frame, (cx - 40, cy - 60), (cx + 40, cy + 60), (0, 255, 0), 2)
+            cv2.putText(vis_frame, "CARD", (cx - 20, cy - 65), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+
+        # 4. Draw interactive buttons/nodes (Checkmarks, etc.) in yellow
+        checkmark = self.detect_teal_checkmark(frame)
+        if checkmark:
+            cv2.circle(vis_frame, checkmark, 25, (0, 255, 255), 3)
+            cv2.putText(vis_frame, "CONFIRM", (checkmark[0] - 40, checkmark[1] - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+
+        # 5. Header info
+        cv2.rectangle(vis_frame, (0, 0), (w, 40), (0, 0, 0), -1)
+        cv2.putText(vis_frame, f"STATE: {state} | TIME: {time.strftime('%H:%M:%S')} | DPI: {self.driver.hwnd is not None}", 
+                    (20, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+
+        assets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
+        os.makedirs(assets_dir, exist_ok=True)
+        save_path = os.path.join(assets_dir, "debug_sight.png")
+        cv2.imwrite(save_path, vis_frame)
+        
+        # Save a timestamped copy for historical analysis if UNKNOWN or failure
+        if state == "UNKNOWN":
+            history_path = os.path.join(assets_dir, f"unknown_sight_{time.strftime('%Y%m%d_%H%M%S')}.png")
+            cv2.imwrite(history_path, vis_frame)
+            
+        return save_path
+
+    def detect_ascension_arrows(self, frame):
+        """
+        Detects left and right arrows for Ascension adjustment on the character selection screen.
+        Returns a dict with 'left' and 'right' coordinates if found.
+        """
+        if frame is None: return {}
+        h, w, _ = frame.shape
+        # Ascension area is usually in the bottom-middle region: Y: 75-90%, X: 30-70%
+        roi_y1, roi_y2 = int(h * 0.75), int(h * 0.95)
+        roi_x1, roi_x2 = int(w * 0.30), int(w * 0.70)
+        roi = frame[roi_y1:roi_y2, roi_x1:roi_x2]
+        
+        gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+        # Use template matching or contour detection for arrow shapes '<' and '>'
+        # For now, let's use OCR words to find 'Ascension' or 'アセンション' and look nearby
+        arrows = {}
+        words = self.get_all_text_coords(roi)
+        
+        asc_words = [wd for wd in words if any(kw in wd['text'].lower() for kw in ["ascension", "アセンション", "アセンシヨン", "レベル"])]
+        if asc_words:
+            # Sort by X to find the label
+            asc_words.sort(key=lambda x: x['x'])
+            label_wd = asc_words[0]
+            # Estimate arrow positions relative to the label
+            # Left arrow is usually to the left of the number, right arrow to the right
+            # But let's look for small square-ish buttons nearby
+            for wd in words:
+                if len(wd['text']) <= 2 and (wd['text'] in ["<", ">", "«", "»", "く", "〉"]):
+                    cx = roi_x1 + wd['x'] + wd['w'] // 2
+                    cy = roi_y1 + wd['y'] + wd['h'] // 2
+                    if wd['text'] in ["<", "«", "く"]:
+                        arrows['left'] = (cx, cy)
+                    else:
+                        arrows['right'] = (cx, cy)
+            
+            # Fallback based on relative positioning if OCR fails to read arrows but finds label
+            if not arrows.get('left'):
+                arrows['left'] = (roi_x1 + label_wd['x'] - 40, roi_y1 + label_wd['y'] + label_wd['h']//2)
+            if not arrows.get('right'):
+                arrows['right'] = (roi_x1 + label_wd['x'] + label_wd['w'] + 60, roi_y1 + label_wd['y'] + label_wd['h']//2)
+                
+        return arrows
+
     def get_reward_card_coords(self):
         w, h = self.window_size
         return [
@@ -464,6 +627,30 @@ Do not include any explanation, markdown formatting, or punctuation. Output ONLY
             (int(w * 0.50), int(h * 0.50)),
             (int(w * 0.68), int(h * 0.50))
         ]
+
+    def get_potion_coords(self, frame):
+        """Detects potion slots in the top-left area by scanning for circular icons."""
+        if frame is None: return []
+        h, w, _ = frame.shape
+        # Potions are in top-left: X < 30%, Y < 15%
+        roi_h = int(h * 0.15)
+        roi_w = int(w * 0.30)
+        roi = frame[0:roi_h, 0:roi_w]
+        
+        gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+        # Use Hough Circles or simple contour detection for potion circles
+        circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, dp=1.2, minDist=30,
+                                   param1=50, param2=30, minRadius=10, maxRadius=40)
+        
+        potion_points = []
+        if circles is not None:
+            circles = np.round(circles[0, :]).astype("int")
+            for (x, y, r) in circles:
+                potion_points.append((x, y))
+        
+        # Sort by X position
+        potion_points = sorted(potion_points, key=lambda p: p[0])
+        return potion_points
 
     def detect_teal_checkmark(self, frame):
         """
@@ -827,7 +1014,8 @@ Do not include any explanation, markdown formatting, or punctuation. Output ONLY
 
         saves_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "saves")
         os.makedirs(saves_dir, exist_ok=True)
-        temp_path = os.path.join(saves_dir, f"temp_ocr_{os.getpid()}.jpg")
+        import random
+        temp_path = os.path.join(saves_dir, f"temp_ocr_{os.getpid()}_{random.randint(1000, 9999)}.jpg")
         try:
             cv2.imwrite(temp_path, cv_image, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
         except Exception as e:

@@ -9,7 +9,7 @@ except AttributeError:
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
-from spire_learning import SpireLearning
+from spire_learning import SpireLearning, is_exhaust_card
 
 import requests
 import json
@@ -252,6 +252,23 @@ Output ONLY the sentence. No quotes, no markdown."""
                 category = "CURSE"
                 situational_boost -= 200.0  # Avoid playing status/curse cards
                 
+            # 7. Exhaust card heuristics (廃棄カードの戦術的優先)
+            if is_exhaust_card(card_name):
+                # Check if there are curse/status cards in hand that we could exhaust
+                has_curse_in_hand = False
+                for other_idx, other_coord in enumerate(cards):
+                    other_hash = card_hashes[other_idx] if other_idx < len(card_hashes) else None
+                    if other_hash and other_hash in self.learning.card_db:
+                        other_cat = self.learning.card_db[other_hash].get("category", "UNKNOWN")
+                        if other_cat == "CURSE":
+                            has_curse_in_hand = True
+                            break
+                if has_curse_in_hand:
+                    situational_boost += 150.0  # Highly prioritize exhaust cards when curses are in hand!
+                    print(f"\U0001f525 [Exhaust] Card '{card_name}' gets +150 boost (curse in hand)")
+                else:
+                    situational_boost += 15.0  # Small boost for general deck thinning
+            
             total_priority = score + situational_boost
             evaluated_cards.append((coord, chash, total_priority, category))
             

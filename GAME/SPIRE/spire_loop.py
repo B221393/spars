@@ -610,6 +610,7 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100000):
                 words = eye.get_all_text_coords(frame)
                 proceed_coord = None
                 proceed_text = ""
+                proceed_bounds = None
                 for w_data in words:
                     text_clean = w_data['text'].strip().replace(" ", "").replace("　", "")
                     text_clean_lower = text_clean.lower()
@@ -624,6 +625,9 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100000):
                         if y_pct > 0.55 and len(text_clean) < 15:
                             proceed_coord = (w_data['x'] + w_data['w']//2, cy)
                             proceed_text = w_data['text']
+                            w_x1, w_y1 = eye.to_logical((w_data['x'], w_data['y']))
+                            w_x2, w_y2 = eye.to_logical((w_data['x'] + w_data['w'], w_data['y'] + w_data['h']))
+                            proceed_bounds = (w_x1, w_y1, w_x2, w_y2)
                             break
                 
                 if proceed_coord:
@@ -632,7 +636,7 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100000):
                         continue
                     logical_coord = eye.to_logical(proceed_coord)
                     print(f"🎯 [Priority Proceed] Detected '{proceed_text}' on screen at {proceed_coord} -> logical {logical_coord}. Clicking immediately!")
-                    success, reason = body.confirm_and_push(logical_coord, f"Priority Proceed Click OCR ({proceed_text})", eye)
+                    success, reason = body.confirm_and_push(logical_coord, f"Priority Proceed Click OCR ({proceed_text})", eye, bounds=proceed_bounds)
                     if success:
                         print("🌟 [Priority Proceed] Successfully pressed Proceed button!")
                         eye.last_frame_small = None
@@ -672,18 +676,25 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100000):
                 words = eye.get_all_text_coords(frame)
                 event_options = []
                 w_screen, h_screen = eye.window_size
+                cap_w = eye.capture_size[0] if (hasattr(eye, 'capture_size') and eye.capture_size) else w_screen
+                cap_h = eye.capture_size[1] if (hasattr(eye, 'capture_size') and eye.capture_size) else h_screen
                 for w_data in words:
                     cx = w_data['x'] + w_data['w'] // 2
                     cy = w_data['y'] + w_data['h'] // 2
-                    x_pct = cx / w_screen
-                    y_pct = cy / h_screen
+                    x_pct = cx / cap_w
+                    y_pct = cy / cap_h
                     
                     if 0.60 <= y_pct <= 0.95 and 0.15 <= x_pct <= 0.75:
                         text = w_data['text'].strip()
                         if len(text) >= 2 and not text.isdigit():
+                            p1 = eye.to_logical((w_data['x'], w_data['y']))
+                            p2 = eye.to_logical((w_data['x'] + w_data['w'], w_data['y'] + w_data['h']))
+                            logical_coord = ((p1[0] + p2[0]) // 2, (p1[1] + p2[1]) // 2)
+                            logical_bounds = (p1[0], p1[1], p2[0], p2[1])
                             event_options.append({
                                 'text': text,
-                                'coord': (cx, cy),
+                                'coord': logical_coord,
+                                'bounds': logical_bounds,
                                 'x_pct': x_pct,
                                 'y_pct': y_pct
                             })
@@ -691,6 +702,7 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100000):
                 event_options = sorted(event_options, key=lambda opt: opt['y_pct'])
                 target_coord = None
                 target_text = None
+                target_bounds = None
                 
                 if event_options:
                     print(f"🗺️ [Event Heuristics] Found {len(event_options)} event option candidates: {[opt['text'] for opt in event_options]}")
@@ -718,6 +730,7 @@ def run_spire_automator(target_title="Slay the Spire", max_loops=100000):
                         
                     target_coord = best_option['coord']
                     target_text = best_option['text']
+                    target_bounds = best_option['bounds']
                     print(f"🎯 [Event Heuristics] Selected best event option: '{target_text}' at {target_coord}")
                 
                 if not target_coord:
@@ -735,7 +748,10 @@ Tell me the exact text label of the most logical button or option I should click
                         for w_data in words:
                             search_words = target_text.lower().split()
                             if any(sw in w_data['text'].lower() for sw in search_words) or target_text.lower() in w_data['text'].lower():
-                                target_coord = (w_data['x'] + w_data['w']//2, w_data['y'] + w_data['h']//2)
+                                p1 = eye.to_logical((w_data['x'], w_data['y']))
+                                p2 = eye.to_logical((w_data['x'] + w_data['w'], w_data['y'] + w_data['h']))
+                                target_coord = ((p1[0] + p2[0]) // 2, (p1[1] + p2[1]) // 2)
+                                target_bounds = (p1[0], p1[1], p2[0], p2[1])
                                 break
                                 
                     if not target_coord:
@@ -748,12 +764,15 @@ Tell me the exact text label of the most logical button or option I should click
                         ]
                         for w_data in words:
                             if any(fb in w_data['text'].lower() for fb in fallbacks):
-                                target_coord = (w_data['x'] + w_data['w']//2, w_data['y'] + w_data['h']//2)
+                                p1 = eye.to_logical((w_data['x'], w_data['y']))
+                                p2 = eye.to_logical((w_data['x'] + w_data['w'], w_data['y'] + w_data['h']))
+                                target_coord = ((p1[0] + p2[0]) // 2, (p1[1] + p2[1]) // 2)
                                 target_text = w_data['text']
+                                target_bounds = (p1[0], p1[1], p2[0], p2[1])
                                 break
                 
                 if target_coord:
-                    success, reason = body.confirm_and_push(target_coord, f"Dynamic Event ({target_text})", eye)
+                    success, reason = body.confirm_and_push(target_coord, f"Dynamic Event ({target_text})", eye, bounds=target_bounds)
                     if success:
                         print("🌟 [AI feeling good] Screen successfully transitioned! Feeling extremely pleased!")
                         # 推論が成功（初速獲得）したので、辞書に記憶する
@@ -772,8 +791,9 @@ Tell me the exact text label of the most logical button or option I should click
                     # Try checking for active teal confirm checkmark button as a visual fallback
                     checkmark_coord = eye.detect_teal_checkmark(frame)
                     if checkmark_coord:
-                        print(f"🎯 [Event] Teal checkmark detected at {checkmark_coord}. Confirming selection...")
-                        success, reason = body.confirm_and_push(checkmark_coord, "Confirm Checkmark Button", eye)
+                        logical_checkmark = eye.to_logical(checkmark_coord)
+                        print(f"🎯 [Event] Teal checkmark detected at {checkmark_coord} -> logical {logical_checkmark}. Confirming selection...")
+                        success, reason = body.confirm_and_push(logical_checkmark, "Confirm Checkmark Button", eye)
                         if success:
                             eye.last_frame_small = None
                             eye.static_cycles_count = 0
@@ -1359,11 +1379,13 @@ Tell me the exact text label of the most logical button or option I should click
                     # Reward List Screen (vertical items to claim)
                     print("🎁 [Reward] Reward List Screen detected (vertical items to claim).")
                     reward_items = []
+                    cap_w = eye.capture_size[0] if (hasattr(eye, 'capture_size') and eye.capture_size) else w
+                    cap_h = eye.capture_size[1] if (hasattr(eye, 'capture_size') and eye.capture_size) else h
                     for w_data in words:
                         cx = w_data['x'] + w_data['w'] // 2
                         cy = w_data['y'] + w_data['h'] // 2
-                        x_pct = cx / w
-                        y_pct = cy / h
+                        x_pct = cx / cap_w
+                        y_pct = cy / cap_h
                         
                         # Reward items are centered vertically stacked (X: 25% to 75%, Y: 20% to 75%)
                         if 0.25 <= x_pct <= 0.75 and 0.20 <= y_pct <= 0.75:
@@ -1373,34 +1395,42 @@ Tell me the exact text label of the most logical button or option I should click
                                              "スキップ", "skip", "進む", "proceed", "続ける", "continue",
                                              "戻る", "確認", "ok", "次へ", "next"]
                             if text_clean and not any(kw in text_clean for kw in skip_keywords):
-                                reward_items.append((w_data, (cx, cy)))
+                                p1 = eye.to_logical((w_data['x'], w_data['y']))
+                                p2 = eye.to_logical((w_data['x'] + w_data['w'], w_data['y'] + w_data['h']))
+                                logical_coord = ((p1[0] + p2[0]) // 2, (p1[1] + p2[1]) // 2)
+                                logical_bounds = (p1[0], p1[1], p2[0], p2[1])
+                                reward_items.append((w_data, logical_coord, logical_bounds))
                                 
                     # Sort items from top to bottom
                     reward_items.sort(key=lambda x: x[0]['y'])
                     
                     if reward_items:
                         # Click the first unclaimed reward row
-                        target_w, target_coord = reward_items[0]
+                        target_w, target_coord, target_bounds = reward_items[0]
                         print(f"🎁 [Reward List] Claiming item '{target_w['text']}' at {target_coord}")
-                        body.click_position(target_coord, f"Reward List Item ({target_w['text']})")
+                        body.click_position(target_coord, f"Reward List Item ({target_w['text']})", bounds=target_bounds)
                         time.sleep(1.5) # Wait for animation/screen load
                     else:
                         # No reward items left, click Proceed/Skip button to exit
                         print("🎁 [Reward List] No rewards left. Looking for exit Proceed/Skip button...")
                         skip_coord = None
+                        skip_bounds = None
                         for w_data in words:
                             txt = w_data['text'].lower().replace(" ", "")
                             cx = w_data['x'] + w_data['w'] // 2
                             cy = w_data['y'] + w_data['h'] // 2
-                            x_pct = cx / w
-                            y_pct = cy / h
+                            x_pct = cx / cap_w
+                            y_pct = cy / cap_h
                             if x_pct > 0.50 and y_pct > 0.75:
                                 if any(kw in txt for kw in ["スキップ", "skip", "進む", "proceed", "続ける", "continue", "戻る", "確認", "ok"]):
-                                    skip_coord = (cx, cy)
+                                    p1 = eye.to_logical((w_data['x'], w_data['y']))
+                                    p2 = eye.to_logical((w_data['x'] + w_data['w'], w_data['y'] + w_data['h']))
+                                    skip_coord = ((p1[0] + p2[0]) // 2, (p1[1] + p2[1]) // 2)
+                                    skip_bounds = (p1[0], p1[1], p2[0], p2[1])
                                     print(f"🎯 [Reward List] Found exit button: '{w_data['text']}' at {skip_coord}")
                                     break
                         if skip_coord:
-                            body.confirm_and_push(skip_coord, "Reward List Exit Button", eye)
+                            body.confirm_and_push(skip_coord, "Reward List Exit Button", eye, bounds=skip_bounds)
                         else:
                             print("⚠️ [Reward List] Exit button not found. Clicking default Proceed coordinate...")
                             body.click_position((int(w * 0.85), int(h * 0.85)), "Reward List Fallback Exit")
@@ -1422,14 +1452,18 @@ Tell me the exact text label of the most logical button or option I should click
                 print("⏸️ [Pause Menu] ポーズメニューを検知。'再開' ボタンを探してクリックします...")
                 words = eye.get_all_text_coords(frame)
                 target_coord = None
+                target_bounds = None
                 for w_data in words:
                     if "再開" in w_data['text']:
-                        target_coord = (w_data['x'] + w_data['w']//2, w_data['y'] + w_data['h']//2)
-                        print(f"🎯 '再開' ボタンを検出: 座標 {target_coord}")
+                        p1 = eye.to_logical((w_data['x'], w_data['y']))
+                        p2 = eye.to_logical((w_data['x'] + w_data['w'], w_data['y'] + w_data['h']))
+                        target_coord = ((p1[0] + p2[0]) // 2, (p1[1] + p2[1]) // 2)
+                        target_bounds = (p1[0], p1[1], p2[0], p2[1])
+                        print(f"🎯 '再開' ボタンを検出: 座標 {target_coord} 範囲 {target_bounds}")
                         break
                 if target_coord:
                     human_observer.bot_is_clicking = True
-                    body.click_position(target_coord, "Resume Button")
+                    body.click_position(target_coord, "Resume Button", bounds=target_bounds)
                     human_observer.bot_is_clicking = False
                     time.sleep(1.5)
                 else:

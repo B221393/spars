@@ -37,16 +37,35 @@ class SpireBody:
     def log(self, message):
         print(f"💪 [Body] {message}")
 
-    def log_coordinate_event(self, action, intended, actual, offset, label):
-        """Logs and outputs targeted (intended) vs. actual clicked coordinates with a Suika-wari directional guide."""
+    def log_coordinate_event(self, action, intended, actual, offset, label, bounds=None):
+        """Logs and outputs targeted (intended) vs. actual clicked coordinates with bounds and a Suika-wari directional guide."""
         dx = actual[0] - intended[0]
         dy = actual[1] - intended[1]
         
+        # Determine bounds (range)
+        ix, iy = intended
+        bx1, by1, bx2, by2 = 0, 0, 0, 0
+        if bounds:
+            bx1, by1, bx2, by2 = bounds
+        else:
+            # Generate smart default bounds based on label/context
+            lbl = label.lower()
+            if "card" in lbl:
+                # Card size: ~120x180
+                bx1, by1, bx2, by2 = ix - 60, iy - 90, ix + 60, iy + 90
+            elif "map" in lbl:
+                # Map node size: ~40x40
+                bx1, by1, bx2, by2 = ix - 20, iy - 20, ix + 20, iy + 20
+            else:
+                # Default button size: ~160x40
+                bx1, by1, bx2, by2 = ix - 80, iy - 20, ix + 80, iy + 20
+        
         # Log to standard console output
         print(f"🎯 [Coordinate Log] {label} ({action}):")
-        print(f"  📍 Intended target: ({intended[0]}, {intended[1]})")
-        print(f"  🖱️ Actual click:   ({actual[0]}, {actual[1]})")
-        print(f"  ⚖️ Offset/Error:   (dx: {dx}, dy: {dy})")
+        print(f"  👁️ Recognition Range (Bounds): ({bx1}, {by1}) to ({bx2}, {by2})")
+        print(f"  📍 Intended target:            ({ix}, {iy})")
+        print(f"  🖱️ Actual touch/click:         ({actual[0]}, {actual[1]})")
+        print(f"  ⚖️ Offset/Error:               (dx: {dx}, dy: {dy})")
         
         # Suika-wari (Watermelon splitting) directional guide
         # (intended is target, actual is click. So if dx > 0, click was to the right of target, target is to the left)
@@ -83,10 +102,11 @@ class SpireBody:
         entry = {
             "timestamp": timestamp,
             "action": action,
-            "intended_x": intended[0],
-            "intended_y": intended[1],
+            "intended_x": ix,
+            "intended_y": iy,
             "actual_x": actual[0],
             "actual_y": actual[1],
+            "bounds": [bx1, by1, bx2, by2],
             "error_dx": dx,
             "error_dy": dy,
             "offset_ox": offset[0],
@@ -114,7 +134,7 @@ class SpireBody:
                 json.dump(log_entries, hf, indent=2)
             
             with open(log_path, "a", encoding="utf-8") as lf:
-                lf.write(f"[{timestamp}] {action:<18} | Target: ({intended[0]:>4}, {intended[1]:>4}) | Click: ({actual[0]:>4}, {actual[1]:>4}) | Diff: ({dx:>3}, {dy:>3}) | {label} | {guide_msg}\n")
+                lf.write(f"[{timestamp}] {action:<18} | Range: ({bx1:>4}, {by1:>4}) to ({bx2:>4}, {by2:>4}) | Target: ({ix:>4}, {iy:>4}) | Click: ({actual[0]:>4}, {actual[1]:>4}) | Diff: ({dx:>3}, {dy:>3}) | {label} | {guide_msg}\n")
         except Exception as e:
             print(f"⚠️ [Coordinate Log] Failed to save coordinate log: {e}")
 
@@ -388,7 +408,7 @@ class SpireBody:
         return False
 
     @bot_action
-    def click_position(self, coord, label="Coordinate"):
+    def click_position(self, coord, label="Coordinate", bounds=None):
         """Simple physical click at targeted coordinates."""
         self.wait_for_active_window()
         x, y = coord
@@ -396,8 +416,8 @@ class SpireBody:
         cx = x + ox
         cy = y + oy
         
-        self.log_coordinate_event("click_position", coord, (cx, cy), (ox, oy), label)
-        self.flash_comparison_pointers(coord, (cx, cy), label=label)
+        self.log_coordinate_event("click_position", coord, (cx, cy), (ox, oy), label, bounds=bounds)
+        self.flash_comparison_pointers(coord, (cx, cy), bounds=bounds, label=label)
         
         self.log(f"Clicking {label} at ({cx}, {cy})")
         self.driver.bezier_move(cx, cy)
@@ -440,7 +460,7 @@ class SpireBody:
         return None
 
     @bot_action
-    def click_and_verify(self, coord, label="Target", max_shifts=5, shift_px=15, change_threshold=5.5):
+    def click_and_verify(self, coord, label="Target", max_shifts=5, shift_px=15, change_threshold=5.5, bounds=None):
         """
         クリック → 画面差分確認 → 変化なし なら少しずらして再試行。
         すべて失敗した場合は、画面のいたるところをクリックして進む。
@@ -483,8 +503,8 @@ class SpireBody:
             before = self._capture_small()
             before_full = self.driver.capture() if self.cache_manager else None
 
-            self.log_coordinate_event("click_and_verify", coord, (tx, ty), (tx - coord[0], ty - coord[1]), f"{label} (shift {i})")
-            self.flash_comparison_pointers(coord, (tx, ty), label=label)
+            self.log_coordinate_event("click_and_verify", coord, (tx, ty), (tx - coord[0], ty - coord[1]), f"{label} (shift {i})", bounds=bounds)
+            self.flash_comparison_pointers(coord, (tx, ty), bounds=bounds, label=label)
 
             self.log(f"Clicking {label} at ({tx},{ty})" + (f" [shift #{i}]" if i > 0 else ""))
             self.driver.bezier_move(tx, ty)
@@ -631,7 +651,7 @@ class SpireBody:
         return True
 
     @bot_action
-    def confirm_and_push(self, target_coord, label, eye_ref):
+    def confirm_and_push(self, target_coord, label, eye_ref, bounds=None):
         """
         [初速のシステム - 改良版]
         1. 実行前にターゲットを視認(OCR等)で確認。
@@ -680,8 +700,8 @@ class SpireBody:
                 return False, "画面の取得に失敗しました（キャプチャ不可）。"
             before_full = self.driver.capture() if self.cache_manager else None
                 
-            self.log_coordinate_event("confirm_and_push", target_coord, (cx, cy), (cx - target_coord[0], cy - target_coord[1]), f"{label} (shift {i})")
-            self.flash_comparison_pointers(target_coord, (cx, cy), label=label)
+            self.log_coordinate_event("confirm_and_push", target_coord, (cx, cy), (cx - target_coord[0], cy - target_coord[1]), f"{label} (shift {i})", bounds=bounds)
+            self.flash_comparison_pointers(target_coord, (cx, cy), bounds=bounds, label=label)
 
             self.driver.bezier_move(cx, cy)
             time.sleep(random.uniform(0.08, 0.15))

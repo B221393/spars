@@ -1103,17 +1103,22 @@ Tell me the exact text label of the most logical button or option I should click
                                     best_visited_cv = None
                                     min_v_dist = 9999.0
                                     nodes = eye.detect_map_nodes(frame)
+                                    print(f"🗺️ [Smart Map] Visited node CV search: current logical col={curr_col}, row={curr_row}")
                                     for nx, ny in nodes:
                                         cv_x_pct = nx / eye.capture_size[0] if (hasattr(eye, 'capture_size') and eye.capture_size) else nx / 2560
                                         cv_y_pct = ny / eye.capture_size[1] if (hasattr(eye, 'capture_size') and eye.capture_size) else ny / 1600
+                                        estimated_col = round((cv_x_pct - 0.25) * 12.0)
                                         
-                                        if 0.48 <= cv_y_pct <= 0.68:
-                                            estimated_col = round((cv_x_pct - 0.25) * 12.0)
-                                            if estimated_col == curr_col:
-                                                dist = abs(cv_y_pct - curr_y_pct)
-                                                if dist < min_v_dist:
-                                                    min_v_dist = dist
-                                                    best_visited_cv = (nx, ny)
+                                        in_y_range = 0.48 <= cv_y_pct <= 0.68
+                                        col_match = estimated_col == curr_col
+                                        if in_y_range or col_match:
+                                            print(f"  🔍 Candidate visited node: ({nx}, {ny}) -> pct=({cv_x_pct:.3f}, {cv_y_pct:.3f}), est_col={estimated_col} | in_y={in_y_range}, col_match={col_match}")
+                                        
+                                        if in_y_range and col_match:
+                                            dist = abs(cv_y_pct - curr_y_pct)
+                                            if dist < min_v_dist:
+                                                min_v_dist = dist
+                                                best_visited_cv = (nx, ny)
                                                 
                                     if best_visited_cv:
 
@@ -1215,21 +1220,24 @@ Tell me the exact text label of the most logical button or option I should click
                                     
                                     # Search matching CV node
                                     nodes = eye.detect_map_nodes(frame)
+                                    print(f"🗺️ [Smart Map] Target node CV search: expected target col={target_col}, Y range={y_min:.3f} to {y_max:.3f}")
                                     best_cv_node = None
                                     min_y_dist = 9999.0
                                     
                                     for nx, ny in nodes:
                                         cv_x_pct = nx / eye.capture_size[0] if (hasattr(eye, 'capture_size') and eye.capture_size) else nx / 2560
                                         cv_y_pct = ny / eye.capture_size[1] if (hasattr(eye, 'capture_size') and eye.capture_size) else ny / 1600
+                                        estimated_col = round((cv_x_pct - 0.25) * 12.0)
                                         
-                                        if y_min <= cv_y_pct <= y_max:
-                                            # Map CV x_pct to logical column (0-6)
-                                            estimated_col = round((cv_x_pct - 0.25) * 12.0)
-                                            if estimated_col == target_col:
-                                                y_dist = abs(cv_y_pct - fallback_y)
-                                                if y_dist < min_y_dist:
-                                                    min_y_dist = y_dist
-                                                    best_cv_node = (nx, ny)
+                                        in_y_range = y_min <= cv_y_pct <= y_max
+                                        col_match = estimated_col == target_col
+                                        print(f"  🔍 Candidate target node: ({nx}, {ny}) -> pct=({cv_x_pct:.3f}, {cv_y_pct:.3f}), est_col={estimated_col} | in_y={in_y_range}, col_match={col_match}")
+                                        
+                                        if in_y_range and col_match:
+                                            y_dist = abs(cv_y_pct - fallback_y)
+                                            if y_dist < min_y_dist:
+                                                min_y_dist = y_dist
+                                                best_cv_node = (nx, ny)
                                                 
                                     if best_cv_node:
                                         target_click_coord = eye.to_logical(best_cv_node)
@@ -1284,7 +1292,16 @@ Tell me the exact text label of the most logical button or option I should click
                         print(f"⚠️ [Smart Map] Exception in smart map logic: {ex}")
                         
                 if not clicked_successfully:
-                    print("⚠️ [Smart Map] Current location or valid next paths could not be determined from game save files.")
+                    print("⚠️ [Smart Map] Map node selection could not be processed automatically.")
+                    if not save_data:
+                        print("  🔴 Reason: Save file could not be found or loaded (save_data is None). Check game status and paths.")
+                    elif act_idx >= len(acts):
+                        print(f"  🔴 Reason: Current act index {act_idx} is out of bounds (acts len: {len(acts)}).")
+                    elif not next_coords:
+                        print("  🔴 Reason: No next valid paths available from current node (visited/next_coords empty).")
+                    else:
+                        print("  🔴 Reason: CV failed to match any visual nodes to the valid next paths.")
+                        
                     print("🛑 [Smart Map] Blind CV clicking is disabled to prevent the bot from wandering to incorrect rooms.")
                     try:
                         saves_dir = os.path.join(BASE_DIR, "saves")

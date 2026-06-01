@@ -6,12 +6,21 @@ import glob
 import cv2
 
 def load_current_run_save():
-    """Reads the current run's save file dynamically using glob."""
+    """Reads the current run's save file dynamically checking both AppData and Steam userdata."""
     try:
-        paths = glob.glob(r"C:\Users\yu_ci\AppData\Roaming\SlayTheSpire2\steam\*\profile1\saves\current_run.save")
+        paths = []
+        # Search AppData (recursive)
+        paths.extend(glob.glob(r"C:\Users\yu_ci\AppData\Roaming\SlayTheSpire2\steam\**\profile*\saves\current_run.save", recursive=True))
+        # Search Steam Userdata (recursive)
+        paths.extend(glob.glob(r"C:\Program Files (x86)\Steam\userdata\*\2868840\remote\**\profile*\saves\current_run.save", recursive=True))
+        
+        paths = [p for p in paths if os.path.exists(p)]
         if not paths:
+            print("⚠️ [SaveParser] No current_run.save found in AppData or Steam userdata.")
             return None
+        # Select the latest modified file
         latest_path = max(paths, key=os.path.getmtime)
+        print(f"📖 [SaveParser] Loading latest save file: {latest_path}")
         with open(latest_path, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:

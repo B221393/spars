@@ -89,26 +89,6 @@ print("Finished boilerplate execution.")
             
         self.status = "Idle"
 
-class ShogiBrain(BaseBrain):
-    def __init__(self, driver: AIDriver):
-        super().__init__(driver)
-        self.name = "SHOGI"
-
-    def execute_step(self):
-        self.status = "Analyzing Shogi Joseki"
-        self.log("Opening TACTICAL_BOOK_2026.md and running Joseki Analyzer...")
-        
-        shogi_script = os.path.join(GENRE_DIR, "SHOGI", "JOSEKI_ANALYZER.py")
-        if os.path.exists(shogi_script):
-            subprocess.run([sys.executable, shogi_script], check=True)
-            self.log("Successfully executed JOSEKI_ANALYZER.py")
-        else:
-            self.log("JOSEKI_ANALYZER.py not found. Simulating Shogi analysis.")
-            
-        self.log("Executing click action verification at (100, 100)...")
-        success = self.driver.execute_and_verify("Verify Shogi Board Layout", 100, 100)
-        self.log(f"Click verification result: {'SUCCESS' if success else 'FAILED'}")
-        self.status = "Idle"
 
 class VoiceBrain(BaseBrain):
     def __init__(self, driver: AIDriver):
@@ -621,7 +601,6 @@ class BrainSwitchboard:
     def __init__(self, target_title="Slay the Spire 2"):
         self.driver = AIDriver(target_title, log_dir=BASE_DIR)
         self.brains = {
-            "SHOGI": ShogiBrain(self.driver),
             "VOICE": VoiceBrain(self.driver),
             "RESEARCH": ResearchBrain(self.driver),
             "DEVELOPMENT": DevelopmentBrain(self.driver),
@@ -665,6 +644,7 @@ class BrainSwitchboard:
 
     def set_active_brain(self, name):
         if name in self.brains:
+            old_brain = getattr(self, "active_brain_name", "NONE")
             self.active_brain_name = name
             if name == "SPIRE":
                 self.driver.target_title = "Slay the Spire 2"
@@ -675,7 +655,43 @@ class BrainSwitchboard:
             elif name == "OFFICE_COWORK":
                 self.driver.target_title = self.get_active_brain().get_target_title()
                 self.driver.connect()
-            self.get_active_brain().log(f"Brain switched to {name}")
+            
+            # Brain swap action: create iteration snapshot folder
+            try:
+                import datetime
+                import shutil
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                swap_dir = os.path.join(BASE_DIR, "brain_swaps", f"swap_to_{name}_{timestamp}")
+                os.makedirs(swap_dir, exist_ok=True)
+                
+                # Copy neural network files if they exist (swapping the weights & learning state)
+                desktop_dir = os.path.dirname(GENRE_DIR)
+                copied_files = []
+                for fn in ["sls2_ai_learning.json", "sls2_ai_weights.json"]:
+                    src_f = os.path.join(desktop_dir, fn)
+                    if os.path.exists(src_f):
+                        shutil.copy2(src_f, swap_dir)
+                        copied_files.append(fn)
+                
+                # Save metadata JSON for the swap event
+                metadata = {
+                    "timestamp": timestamp,
+                    "event": "brain_swap",
+                    "from_brain": old_brain,
+                    "to_brain": name,
+                    "neural_network_states_copied": copied_files,
+                    "status_at_swap": {
+                        "spire_status": self.brains.get("SPIRE").status if "SPIRE" in self.brains else "N/A",
+                        "game_status": self.brains.get("GAME").status if "GAME" in self.brains else "N/A"
+                    }
+                }
+                with open(os.path.join(swap_dir, "metadata.json"), "w", encoding="utf-8") as f:
+                    json.dump(metadata, f, indent=2, ensure_ascii=False)
+                
+                self.get_active_brain().log(f"Brain swapped to {name}. Snapshot saved to: brain_swaps/swap_to_{name}_{timestamp}")
+            except Exception as e:
+                self.get_active_brain().log(f"Brain swapped to {name} (snapshot creation failed: {e})")
+                
             self.save_status()
             return True
         return False

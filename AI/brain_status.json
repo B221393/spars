@@ -1,10 +1,6 @@
 {
-  "active_brain": "SPIRE",
+  "active_brain": "GAME",
   "brains": {
-    "SHOGI": {
-      "status": "Idle",
-      "logs": []
-    },
     "VOICE": {
       "status": "Idle",
       "logs": []
@@ -22,22 +18,36 @@
       "logs": []
     },
     "GAME": {
-      "status": "Idle",
-      "logs": []
+      "status": "Playing Rhythm Game",
+      "logs": [
+        "[13:00:10] Brain swapped to GAME. Snapshot saved to: brain_swaps/swap_to_GAME_20260604_130010",
+        "[13:00:10] Triggering execute_step on GAME...",
+        "[13:00:10] Launching rhythm_player.py from GAME folder..."
+      ]
     },
     "OFFICE": {
       "status": "Idle",
       "logs": []
     },
     "SPIRE": {
-      "status": "Autoplay Slay the Spire",
+      "status": "Idle",
+      "logs": []
+    },
+    "OFFICE_COWORK": {
+      "status": "Idle",
       "logs": [
-        "[18:19:53] Brain switched to SPIRE",
-        "[18:19:53] Triggering execute_step on SPIRE...",
-        "[18:19:53] Launching spire_loop.py from GAME folder..."
+        "[13:00:10] Office Co-worker Brain initialized."
       ]
     },
     "DOCS": {
+      "status": "Idle",
+      "logs": []
+    },
+    "RESEARCH_COORDINATES": {
+      "status": "Idle",
+      "logs": []
+    },
+    "SHOGI": {
       "status": "Idle",
       "logs": []
     },

@@ -198,12 +198,15 @@ class OfficeCoworkBrain(BaseBrain):
 
     def trigger_visual_action(self, label, coord, keys_fallback=None):
         """Handles action by either guide overlay or physical click based on mode"""
+        if self.mode == "autoplay" and keys_fallback:
+            self.log(f"[AUTOPLAY FAST] Directly sending keyboard shortcut sequence: {keys_fallback}")
+            self.driver.type_string(keys_fallback)
+            return True
+            
         if not coord and keys_fallback:
-            # If coordinates not found, try sending keyboard keys directly
             self.log(f"Coordinates for '{label}' not found. Using keyboard fallback sequence: {keys_fallback}")
             if self.mode == "autoplay":
                 self.driver.type_string(keys_fallback)
-                time.sleep(0.5)
             return True
             
         if not coord:
@@ -219,53 +222,56 @@ class OfficeCoworkBrain(BaseBrain):
             return True
 
     def run_pptx_recipe(self, action):
+        fallback = None
         if action == "theme_dark":
-            # Dark theme recipe: click Design (デザイン) tab, select dark variant or click format background
-            # Fallback keys: Alt + G (Design tab) -> H (Format Background)
+            fallback = "{ALT}g"
+            if self.mode == "autoplay":
+                return self.trigger_visual_action("Design Tab", None, fallback), "Theme applied via hotkeys."
             design_coord = self.find_menu_option(["デザイン", "design"])
-            self.trigger_visual_action("Design Tab", design_coord, "{ALT}g")
-            return True, "Guided to Design Theme option."
+            return self.trigger_visual_action("Design Tab", design_coord, fallback), "Guided to Design Theme option."
             
         elif action == "align_center":
-            # Align shapes recipe: click Home (ホーム) -> Arrange (整列/配置) -> Align (配置) -> Center (左右中央揃え)
-            # Keyboard fallback: Alt + H -> G -> A -> C
+            fallback = "{ALT}hgac"
+            if self.mode == "autoplay":
+                return self.trigger_visual_action("Arrange / Align Menu", None, fallback), "Align Center applied via hotkeys."
             arrange_coord = self.find_menu_option(["整列", "配置", "arrange", "align"])
-            self.trigger_visual_action("Arrange / Align Menu", arrange_coord, "{ALT}hgac")
-            return True, "Guided to Arrange & Align Center option."
+            return self.trigger_visual_action("Arrange / Align Menu", arrange_coord, fallback), "Guided to Arrange & Align Center option."
             
         elif action == "insert_text_box":
-            # Insert text box: click Insert (挿入) -> Text Box (テキストボックス)
-            # Keyboard fallback: Alt + N -> X
+            fallback = "{ALT}nx"
+            if self.mode == "autoplay":
+                return self.trigger_visual_action("Insert Tab", None, fallback), "Text Box inserted via hotkeys."
             insert_coord = self.find_menu_option(["挿入", "insert"])
-            self.trigger_visual_action("Insert Tab", insert_coord, "{ALT}n")
-            return True, "Guided to Insert Tab for Text Box."
+            return self.trigger_visual_action("Insert Tab", insert_coord, fallback), "Guided to Insert Tab for Text Box."
             
         return False, f"Unknown PowerPoint action: {action}"
 
     def run_excel_recipe(self, action):
+        fallback = None
         if action == "format_table":
-            # Format table: Home -> Format as Table
-            # Keyboard fallback: Alt + H -> T
+            fallback = "{ALT}ht"
+            if self.mode == "autoplay":
+                return self.trigger_visual_action("Format as Table", None, fallback), "Table formatting applied via hotkeys."
             table_coord = self.find_menu_option(["テーブルとして書式設定", "tableformat", "書式設定"])
-            self.trigger_visual_action("Format as Table", table_coord, "{ALT}ht")
-            return True, "Guided to Table Formatting."
+            return self.trigger_visual_action("Format as Table", table_coord, fallback), "Guided to Table Formatting."
             
         elif action == "insert_chart":
-            # Insert chart: Insert -> Recommend Charts
-            # Keyboard fallback: Alt + N -> R
+            fallback = "{ALT}nr"
+            if self.mode == "autoplay":
+                return self.trigger_visual_action("Insert Tab", None, fallback), "Chart inserted via hotkeys."
             insert_coord = self.find_menu_option(["挿入", "insert"])
-            self.trigger_visual_action("Insert Tab", insert_coord, "{ALT}n")
-            return True, "Guided to Insert Tab for Charts."
+            return self.trigger_visual_action("Insert Tab", insert_coord, fallback), "Guided to Insert Tab for Charts."
             
         return False, f"Unknown Excel action: {action}"
 
     def run_word_recipe(self, action):
+        fallback = None
         if action == "heading_hierarchy":
-            # Format title text box style or format font sizes
-            # Alt + H -> F -> S (change font size)
+            fallback = "{ALT}h"
+            if self.mode == "autoplay":
+                return self.trigger_visual_action("Home Tab", None, fallback), "Heading styles applied via hotkeys."
             home_coord = self.find_menu_option(["ホーム", "home"])
-            self.trigger_visual_action("Home Tab", home_coord, "{ALT}h")
-            return True, "Guided to Font formatting menu."
+            return self.trigger_visual_action("Home Tab", home_coord, fallback), "Guided to Font formatting menu."
             
         return False, f"Unknown Word action: {action}"
 

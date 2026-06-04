@@ -1,0 +1,56 @@
+{
+  "design_principles": {
+    "harmony_palettes": {
+      "professional_dark": {
+        "background": "#0d0d11",
+        "card_bg": "rgba(30, 30, 40, 0.6)",
+        "primary": "#00d4ff",
+        "secondary": "#94a3b8",
+        "accent": "#ff007f",
+        "text": "#e2e8f0"
+      },
+      "corporate_clean": {
+        "background": "#f8fafc",
+        "card_bg": "#ffffff",
+        "primary": "#1e40af",
+        "secondary": "#475569",
+        "accent": "#0ea5e9",
+        "text": "#0f172a"
+      },
+      "marketing_vibrant": {
+        "background": "#ffffff",
+        "card_bg": "#fef08a",
+        "primary": "#7c3aed",
+        "secondary": "#db2777",
+        "accent": "#f97316",
+        "text": "#1e1b4b"
+      }
+    },
+    "typography": {
+      "heading_fonts": ["Outfit", "Inter", "Segoe UI Semibold"],
+      "body_fonts": ["Segoe UI", "Roboto", "Arial"],
+      "font_pairings": [
+        {
+          "heading": "Outfit",
+          "body": "Segoe UI"
+        },
+        {
+          "heading": "Inter",
+          "body": "Roboto"
+        }
+      ]
+    },
+    "grids": {
+      "slide_margins": {
+        "top": 0.15,
+        "bottom": 0.15,
+        "left": 0.10,
+        "right": 0.10
+      },
+      "default_paddings": {
+        "title_to_subtitle": 40,
+        "card_spacing": 24
+      }
+    }
+  }
+}

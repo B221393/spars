@@ -17,7 +17,12 @@ GENRE_DIR = os.path.dirname(BASE_DIR)
 
 sys.path.append(BASE_DIR)
 sys.path.append(os.path.join(BASE_DIR, "CORE"))
+sys.path.append(os.path.join(GENRE_DIR, "OFFICE_COWORK"))
 from CORE.ai_driver import AIDriver
+try:
+    from office_cowork_brain import OfficeCoworkBrain
+except ImportError:
+    OfficeCoworkBrain = None
 
 class BaseBrain:
     def __init__(self, driver: AIDriver):
@@ -625,6 +630,8 @@ class BrainSwitchboard:
             "OFFICE": OfficeBrain(self.driver),
             "SPIRE": SpireBrain(self.driver)
         }
+        if OfficeCoworkBrain:
+            self.brains["OFFICE_COWORK"] = OfficeCoworkBrain(self.driver)
         self.scan_and_register_brains()
         self.active_brain_name = "DEVELOPMENT"
         self.status_file = os.path.join(BASE_DIR, "brain_status.json")
@@ -664,6 +671,9 @@ class BrainSwitchboard:
                 self.driver.connect()
             elif name == "GAME":
                 self.driver.target_title = "AI Training Game"
+                self.driver.connect()
+            elif name == "OFFICE_COWORK":
+                self.driver.target_title = self.get_active_brain().get_target_title()
                 self.driver.connect()
             self.get_active_brain().log(f"Brain switched to {name}")
             self.save_status()

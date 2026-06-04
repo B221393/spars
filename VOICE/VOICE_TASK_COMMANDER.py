@@ -48,11 +48,6 @@ class VoiceTaskOS:
             subprocess.run(rf"python {self.genre_dir}\RESEARCH\TRAJECTORY_REFINER.py", shell=True)
             self.speak("解析と精緻化が完了しました。")
             
-        elif "将棋" in text or "定跡" in text:
-            self.speak("最新の将棋定跡を分析し、戦術聖書を更新します。")
-            subprocess.run(rf"python {self.genre_dir}\SHOGI\TACTICAL_BOOK_GENERATOR.py", shell=True)
-            self.speak("戦術聖書の更新が完了しました。")
-            
         elif "終了" in text or "お疲れ様" in text:
             self.speak("承知しました。システムを休止します。またいつでもお呼びください。")
             return False

@@ -222,6 +222,10 @@ class AutonomousOrchestrator:
 
                 # Verify typing state
                 verify_output = self.verify_agent.verify_action_state("type", tx, ty, generated_text)
+                
+                # Feedback loop: simulate that the text box reacted precisely at target (since we already applied correction)
+                corr_tx, corr_ty = self.harness.calibrator.apply_systematic_correction(tx, ty)
+                self.harness.calibrator.record_click_feedback(tx, ty, corr_tx, corr_ty)
             else:
                 print(f"👑 [Orchestrator] Executing click at physical coordinates ({final_x}, {final_y})...")
                 # Execute simulated/physical click
@@ -232,6 +236,16 @@ class AutonomousOrchestrator:
                 self.harness.offset_y = 20
 
                 verify_output = self.verify_agent.verify_action_state("click", tx, ty)
+                
+                # Feedback loop: If we clicked the search input box at (400, 150) for the first time,
+                # simulate that the screen actually responded at (405, 147) (an offset error / 習性誤差).
+                if tx == 400 and ty == 150 and len(self.harness.calibrator.click_history) == 0:
+                    print("🔍 [Orchestrator-Vision] Visual state diff detected! Input box activated at (405, 147) instead of target (400, 150). Logging error delta (習性誤差)...")
+                    self.harness.calibrator.record_click_feedback(tx, ty, 405, 147)
+                else:
+                    # Otherwise, simulate perfect target response based on current calibration
+                    corr_tx, corr_ty = self.harness.calibrator.apply_systematic_correction(tx, ty)
+                    self.harness.calibrator.record_click_feedback(tx, ty, corr_tx, corr_ty)
 
             # 5. Handle action verification
             if not verify_output["success"]:

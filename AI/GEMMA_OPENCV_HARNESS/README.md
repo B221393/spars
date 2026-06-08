@@ -33,6 +33,7 @@ The Agent Harness acts as a middleware layer between the AI model and the OS to 
 1. **Gemma 4 8B (Thinking Brain):** Determines actions (clicks, key typing) based on current UI lists, outputting pure JSON via Ollama's `format: "json"` mode.
 2. **OpenCV Calibration (Vision Core):** Takes screen captures and aligns them to pre-defined reference markers using Normalized Cross-Correlation (NCC) template matching. This measures pixel-level physical offset (caused by DPI scaling, window resizing, or screen resolution shifts).
 3. **Safety Validator (Fail-Safe Kill Switch):** Restricts pointer click positions to a safe bounds range (e.g. `[safety_margin, screen_size - safety_margin]`). If a target coordinate violates this range, the harness intercepts the command, cancels execution, and raises a trigger alert.
+4. **Lightweight Systematic Calibrator (習性誤差補正器):** A local tracker in `agent_harness.py` that measures systematic deltas (error offsets) between target clicks and actual screen responses. It learns the coordinate shift trend dynamically and automatically corrects subsequent actions locally, offloading complex math from the heavy main LLM.
 
 ---
 

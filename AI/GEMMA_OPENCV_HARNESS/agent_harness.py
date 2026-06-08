@@ -21,6 +21,41 @@ except AttributeError:
     pass
 
 
+class LightweightCalibrator:
+    """
+    Lightweight local spatial calibrator that tracks the error offset (systematic error/習性誤差)
+    between where clicks were executed and where the screen actually responded.
+    Learns the systematic shift dynamically and applies it to offload complex math from heavy LLMs.
+    """
+    def __init__(self, alpha=0.5):
+        self.alpha = alpha  # Smoothing factor for running average
+        self.systematic_dx = 0.0
+        self.systematic_dy = 0.0
+        self.click_history = []
+
+    def record_click_feedback(self, clicked_x, clicked_y, actual_x, actual_y):
+        """
+        Record coordinate feedback from visual state change.
+        """
+        dx = actual_x - clicked_x
+        dy = actual_y - clicked_y
+        self.click_history.append(((clicked_x, clicked_y), (actual_x, actual_y), (dx, dy)))
+        
+        # Update running average of systematic errors (習性誤差の移動平均)
+        self.systematic_dx = self.alpha * dx + (1 - self.alpha) * self.systematic_dx
+        self.systematic_dy = self.alpha * dy + (1 - self.alpha) * self.systematic_dy
+        print(f"📈 [LightweightCalibrator] Click delta: dx={dx}px, dy={dy}px. "
+              f"Updated systematic offset (習性誤差): DX={self.systematic_dx:.2f}px, DY={self.systematic_dy:.2f}px", flush=True)
+
+    def apply_systematic_correction(self, target_x, target_y):
+        """
+        Applies the learned systematic correction locally to the target coordinates.
+        """
+        corrected_x = target_x + int(round(self.systematic_dx))
+        corrected_y = target_y + int(round(self.systematic_dy))
+        return corrected_x, corrected_y
+
+
 class AgentHarness:
     def __init__(self, ollama_url="http://localhost:11434", model="gemma4:8b", safety_margin=50):
         self.ollama_url = ollama_url
@@ -29,6 +64,9 @@ class AgentHarness:
         # Coordinate correction offsets (measured by OpenCV calibration)
         self.offset_x = 0
         self.offset_y = 0
+        
+        # Local systematic calibrator for dynamic corrections (習性誤差補正器)
+        self.calibrator = LightweightCalibrator()
         
         # Get active screen resolution
         try:
@@ -92,8 +130,14 @@ class AgentHarness:
         """
         Validates target coordinates with safety margins, applies offsets, and executes physical interaction.
         """
-        final_x = target_x + self.offset_x
-        final_y = target_y + self.offset_y
+        # Apply local systematic correction (習性誤差補正) first
+        corr_x, corr_y = self.calibrator.apply_systematic_correction(target_x, target_y)
+        if corr_x != target_x or corr_y != target_y:
+            print(f"[Harness-Local] Applied systematic offset (習性誤差) correction: "
+                  f"({target_x}, {target_y}) -> ({corr_x}, {corr_y})", flush=True)
+
+        final_x = corr_x + self.offset_x
+        final_y = corr_y + self.offset_y
         
         # FAIL-SAFE: Check boundaries
         if (final_x < self.safety_margin or final_x > self.screen_width - self.safety_margin or

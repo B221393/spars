@@ -467,6 +467,14 @@
 
             // Draw Screen Canvas
             drawScreen(sw, sh, margin, tx, ty, finalX, finalY, isBlocked);
+
+            // API State Report
+            const stateData = { sw, sh, margin, tx, ty, ox, oy, finalX, finalY, isBlocked };
+            fetch('/api/status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(stateData)
+            }).catch(err => console.log("Report error:", err));
         }
 
         function drawScreen(sw, sh, margin, tx, ty, finalX, finalY, isBlocked) {

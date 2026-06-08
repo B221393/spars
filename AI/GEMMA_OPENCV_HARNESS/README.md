@@ -43,6 +43,7 @@ The Agent Harness acts as a middleware layer between the AI model and the OS to 
 - **`mock_env_test.py`**: A standalone test suite that creates a mock environment with simulated buttons and verifies template calibration and fail-safe triggers.
 - **`autonomous_agent_loop.py`**: Runs a single-agent self-healing loop that queries Gemma, catches coordinate checks or click failures, and feeds error logs back into the LLM context.
 - **`autonomous_orchestrator.py`**: Implements a multi-agent orchestration loop with **AI-to-AI Automated Input**. Automatically decomposes goals and delegates sub-tasks to specialized sub-agents (Vision, Planner, Guard, Verify, and a dedicated Content Writer agent) to automatically generate input text and type into GUI boxes without manual user entry. Includes self-healing correction.
+- **`continuous_learning_loop.py`**: A continuous autopilot script that runs a local HTTP server on port 8123, opens the interactive simulator in a web browser, executes GUI clicks physically via PyAutoGUI, crops the visual canvas via OpenCV, and trains a local Ollama model (e.g., `gemma4:latest`) on coordinate safety rules with self-healing correction.
 - **`simulator.html`**: A visually stunning dark-mode interactive HTML dashboard featuring real-time coordinate rendering on a grid, custom sliders for margins and offsets, and live JSON output schema.
 
 ---
@@ -72,6 +73,14 @@ Run the multi-agent orchestration loop:
 ```bash
 python autonomous_orchestrator.py
 ```
+
+### Continuous Learning & Practice Autopilot Loop
+Ensure your local Ollama server is running with your preferred model (e.g. `gemma4:latest` or `gemma3:4b`), then run the continuous loop:
+```bash
+python continuous_learning_loop.py
+```
+This will physically control your cursor to calibrate and randomize parameters on the browser, crop images to the `learning_gallery/` directory, and log Ollama validation metrics to `learning_progress.json`.
+
 
 ### Interactive Simulator
 Open **`simulator.html`** in any web browser. 

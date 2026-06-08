@@ -41,6 +41,8 @@ The Agent Harness acts as a middleware layer between the AI model and the OS to 
 - **`agent_harness.py`**: The core Python class implementation of the agent harness. Bridges Ollama, OpenCV matching, and PyAutoGUI clicks.
 - **`system_prompt.txt`**: The Japanese system prompt instructions and JSON output schema fed into Gemma 4 8B.
 - **`mock_env_test.py`**: A standalone test suite that creates a mock environment with simulated buttons and verifies template calibration and fail-safe triggers.
+- **`autonomous_agent_loop.py`**: Runs a single-agent self-healing loop that queries Gemma, catches coordinate checks or click failures, and feeds error logs back into the LLM context.
+- **`autonomous_orchestrator.py`**: Implements a multi-agent orchestration loop with **AI-to-AI Automated Input**. Automatically decomposes goals and delegates sub-tasks to specialized sub-agents (Vision, Planner, Guard, Verify, and a dedicated Content Writer agent) to automatically generate input text and type into GUI boxes without manual user entry. Includes self-healing correction.
 - **`simulator.html`**: A visually stunning dark-mode interactive HTML dashboard featuring real-time coordinate rendering on a grid, custom sliders for margins and offsets, and live JSON output schema.
 
 ---
@@ -57,6 +59,18 @@ pip install opencv-python pyautogui numpy requests
 Run the verification test script. This generates temporary mock template markers, measures coordinates, and validates boundary checks:
 ```bash
 python mock_env_test.py
+```
+
+### Self-Healing Agent Loop
+Run the single-agent self-healing test loop:
+```bash
+python autonomous_agent_loop.py --simulate
+```
+
+### Multi-Agent Orchestrator Loop
+Run the multi-agent orchestration loop:
+```bash
+python autonomous_orchestrator.py
 ```
 
 ### Interactive Simulator

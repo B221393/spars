@@ -511,7 +511,7 @@ class DesignPluginDashboard:
         
         try:
             url = f"{self.ollama_url}/api/generate"
-            response = requests.post(url, json=payload, timeout=45)
+            response = requests.post(url, json=payload, timeout=None)
             if response.status_code == 200:
                 raw_res = response.json().get("response", "{}")
                 plan = json.loads(raw_res)
@@ -628,7 +628,7 @@ class DesignPluginDashboard:
             
             try:
                 url = f"{self.ollama_url}/api/generate"
-                response = requests.post(url, json=payload, timeout=20)
+                response = requests.post(url, json=payload, timeout=None)
                 if response.status_code == 200:
                     discovered_goal = response.json().get("response", "").strip()
                     # Strip any markdown backticks or quotes if the model wrapped them

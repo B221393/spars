@@ -79,7 +79,7 @@ def launch_game():
 def get_game_state():
     """Fetches the game state from the mod API."""
     try:
-        r = requests.get(API_URL, params={"format": "json"}, timeout=2.0)
+        r = requests.get(API_URL, params={"format": "json"}, timeout=None)
         if r.status_code == 200:
             return r.json()
     except Exception:
@@ -250,7 +250,7 @@ def query_gemma(prompt):
         }
     }
     try:
-        r = requests.post(OLLAMA_URL, json=payload, timeout=45.0)
+        r = requests.post(OLLAMA_URL, json=payload, timeout=None)
         if r.status_code == 200:
             resp_str = r.json().get("response", "{}")
             return json.loads(resp_str)
@@ -332,7 +332,7 @@ def execute_action(action, params):
         return False
 
     try:
-        r = requests.post(API_URL, json=payload, timeout=2.0)
+        r = requests.post(API_URL, json=payload, timeout=None)
         if r.status_code == 200:
             res_json = r.json()
             if res_json.get("status") == "ok":

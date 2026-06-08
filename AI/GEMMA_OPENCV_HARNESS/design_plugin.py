@@ -68,6 +68,8 @@ class DesignPluginDashboard:
         self.act = 1
         self.room_type = "unknown"
         self.last_save_mtime = 0.0
+        self.last_cal_mtime = 0.0
+        self.last_status_mtime = 0.0
         
         self.is_thinking = False
         self.is_discovering_goal = False
@@ -526,25 +528,18 @@ class DesignPluginDashboard:
         except Exception as e:
             self.log_thought(f"❌ Failed to dispatch command: {e}")
 
-    def load_sts2_save(self):
-        """Scans and parses current_run.save from AppData/Steam userdata directories."""
+    def get_latest_save_path_and_mtime(self):
+        """Finds the latest save file path and its modification time, without parsing it yet."""
         paths = []
         paths.extend(glob.glob(r"C:\Users\yu_ci\AppData\Roaming\SlayTheSpire2\steam\**\profile*\saves\current_run.save", recursive=True))
         paths.extend(glob.glob(r"C:\Program Files (x86)\Steam\userdata\*\2868840\remote\**\profile*\saves\current_run.save", recursive=True))
         
         paths = [p for p in paths if os.path.exists(p)]
         if not paths:
-            return None
+            return None, 0.0
             
         latest_path = max(paths, key=os.path.getmtime)
-        mtime = os.path.getmtime(latest_path)
-        
-        # Return parsed data
-        try:
-            with open(latest_path, "r", encoding="utf-8") as f:
-                return json.load(f), mtime
-        except:
-            return None, 0.0
+        return latest_path, os.path.getmtime(latest_path)
 
     def query_goal_discovery(self):
         if self.is_discovering_goal:
@@ -606,10 +601,13 @@ class DesignPluginDashboard:
         def monitor():
             while True:
                 # 1. Load Slay the Spire 2 Save file telemetry
-                save_data, mtime = self.load_sts2_save()
-                if save_data and mtime > self.last_save_mtime:
+                latest_path, mtime = self.get_latest_save_path_and_mtime()
+                if latest_path and mtime > self.last_save_mtime:
                     self.last_save_mtime = mtime
                     try:
+                        with open(latest_path, "r", encoding="utf-8") as f:
+                            save_data = json.load(f)
+                        
                         # Extract players metadata
                         if "players" in save_data and save_data["players"]:
                             player = save_data["players"][0]
@@ -649,30 +647,36 @@ class DesignPluginDashboard:
                     
                 if target_file:
                     try:
-                        with open(target_file, "r", encoding="utf-8") as f:
-                            data = json.load(f)
-                            self.mean_dx = data.get("mean_dx", 0.0)
-                            self.mean_dy = data.get("mean_dy", 0.0)
-                            self.std_dx = data.get("std_dx", 0.0)
-                            self.std_dy = data.get("std_dy", 0.0)
-                            self.trend = data.get("trend", "Calibrating...")
-                            self.click_history = data.get("click_history", [])
-                            
-                            self.offset_var.set(f"Offset: dx={self.mean_dx:.1f}px, dy={self.mean_dy:.1f}px")
-                            self.std_var.set(f"Variance: sx={self.std_dx:.1f}px, sy={self.std_dy:.1f}px")
-                            self.trend_var.set(f"Trend: {self.trend}")
-                            
-                            self.root.after(0, self.update_radar_points)
+                        cal_mtime = os.path.getmtime(target_file)
+                        if cal_mtime > self.last_cal_mtime:
+                            self.last_cal_mtime = cal_mtime
+                            with open(target_file, "r", encoding="utf-8") as f:
+                                data = json.load(f)
+                                self.mean_dx = data.get("mean_dx", 0.0)
+                                self.mean_dy = data.get("mean_dy", 0.0)
+                                self.std_dx = data.get("std_dx", 0.0)
+                                self.std_dy = data.get("std_dy", 0.0)
+                                self.trend = data.get("trend", "Calibrating...")
+                                self.click_history = data.get("click_history", [])
+                                
+                                self.offset_var.set(f"Offset: dx={self.mean_dx:.1f}px, dy={self.mean_dy:.1f}px")
+                                self.std_var.set(f"Variance: sx={self.std_dx:.1f}px, sy={self.std_dy:.1f}px")
+                                self.trend_var.set(f"Trend: {self.trend}")
+                                
+                                self.root.after(0, self.update_radar_points)
                     except:
                         pass
                         
                 # 3. Update active brain
                 if os.path.exists(SYSTEM_STATUS):
                     try:
-                        with open(SYSTEM_STATUS, "r", encoding="utf-8") as f:
-                            data = json.load(f)
-                            active = data.get("active_brain", "SPIRE")
-                            self.active_brain_var.set(f"Active Brain: {active}")
+                        status_mtime = os.path.getmtime(SYSTEM_STATUS)
+                        if status_mtime > self.last_status_mtime:
+                            self.last_status_mtime = status_mtime
+                            with open(SYSTEM_STATUS, "r", encoding="utf-8") as f:
+                                data = json.load(f)
+                                active = data.get("active_brain", "SPIRE")
+                                self.active_brain_var.set(f"Active Brain: {active}")
                     except:
                         pass
                         

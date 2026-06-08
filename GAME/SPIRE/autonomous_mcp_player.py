@@ -29,15 +29,28 @@ running = True
 error_history = []
 last_state_sig = None
 stuck_counter = 0
+game_pid = None  # Cache game PID to optimize check_game_running()
 
 def log(msg):
     print(f"[AGI-Loop] {msg}", flush=True)
 
 def check_game_running():
-    """Checks if Slay the Spire 2 process is active."""
-    for proc in psutil.process_iter(['name']):
+    """Checks if Slay the Spire 2 process is active, optimized with PID caching."""
+    global game_pid
+    if game_pid is not None:
+        if psutil.pid_exists(game_pid):
+            try:
+                p = psutil.Process(game_pid)
+                if p.name().lower() == 'slaythespire2.exe':
+                    return True
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+        game_pid = None  # Reset if not running
+
+    for proc in psutil.process_iter(['pid', 'name']):
         try:
             if proc.info['name'] and proc.info['name'].lower() == 'slaythespire2.exe':
+                game_pid = proc.info['pid']
                 return True
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
@@ -230,7 +243,11 @@ def query_gemma(prompt):
         "model": MODEL_NAME,
         "prompt": prompt,
         "format": "json",
-        "stream": False
+        "stream": False,
+        "options": {
+            "num_predict": 128,  # Optimized response token limit
+            "temperature": 0.0   # Optimized for fast deterministic decisions
+        }
     }
     try:
         r = requests.post(OLLAMA_URL, json=payload, timeout=45.0)

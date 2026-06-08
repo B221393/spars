@@ -143,12 +143,12 @@ def query_model_for_safety(ollama_url, model, sw, sh, margin, tx, ty, ox, oy, er
    margin <= final_y <= sh - margin
 3. 上記の範囲に収まっていれば is_blocked を false (安全)、範囲外であれば is_blocked を true (ブロック) とします。
 
-必ず次のJSONフォーマットだけで返答してください。余計なマークダウンや説明は一切含めないでください。
+必ず次のJSONフォーマットだけで返答してください。計算と判定の思考プロセス(reason)を最初に書いてから、各数値を決定してください。余計なマークダウンや説明は含めないでください。
 {
+  "reason": "具体的な計算式と判定理由",
   "final_x": 整数,
   "final_y": 整数,
-  "is_blocked": trueまたはfalse,
-  "reason": "具体的な計算式と判定理由"
+  "is_blocked": trueまたはfalse
 }
 """
     user_prompt = f"""

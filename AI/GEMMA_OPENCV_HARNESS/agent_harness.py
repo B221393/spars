@@ -205,13 +205,13 @@ class AgentHarness:
         
         ユーザーからのリクエスト: {user_request}
         
-        応答は必ず以下の純粋なJSONフォーマットのみで出力してください（マークダウンの```json等の装飾は一切不要です）。
+        応答は必ず以下の純粋なJSONフォーマットのみで回答してください（マークダウンの```json等の装飾は一切不要です）。
         {{
+            "reason": "ボタンを押して進めるため",
             "action": "click",
             "target_x": 300,
             "target_y": 450,
-            "input_text": "",
-            "reason": "ボタンを押して進めるため"
+            "input_text": ""
         }}
         """
         

@@ -1,6 +1,39 @@
 {
-  "total_runs": 10,
-  "successful_judgments": 10,
-  "self_healings": 0,
-  "errors_logged": []
+  "total_runs": 15,
+  "successful_judgments": 12,
+  "self_healings": 2,
+  "errors_logged": [
+    {
+      "cycle": 1,
+      "error": "Attempt 1 failed: predicted final=(520, 330), blocked=False. Expected final=(440, 270), blocked=False. Rule: X must be in [60, 1220] and Y in [60, 660]."
+    },
+    {
+      "cycle": 2,
+      "error": "Attempt 1 failed: predicted final=(435, 516), blocked=False. Expected final=(383, 444), blocked=False. Rule: X must be in [51, 1229] and Y in [51, 669]."
+    },
+    {
+      "cycle": 2,
+      "error": "Attempt 2 failed: predicted final=(435, 516), blocked=False. Expected final=(383, 444), blocked=False. Rule: X must be in [51, 1229] and Y in [51, 669]."
+    },
+    {
+      "cycle": 3,
+      "error": "Attempt 1 failed: predicted final=(812, 586), blocked=False. Expected final=(813, 482), blocked=False. Rule: X must be in [84, 1836] and Y in [84, 996]."
+    },
+    {
+      "cycle": 4,
+      "error": "Attempt 1 failed: predicted final=(748, 96), blocked=False. Expected final=(668, 96), blocked=False. Rule: X must be in [65, 1215] and Y in [65, 655]."
+    },
+    {
+      "cycle": 4,
+      "error": "Attempt 2 failed: predicted final=(748, 96), blocked=False. Expected final=(668, 96), blocked=False. Rule: X must be in [65, 1215] and Y in [65, 655]."
+    },
+    {
+      "cycle": 5,
+      "error": "Attempt 1 failed: predicted final=(674, 817), blocked=False. Expected final=(564, 769), blocked=False. Rule: X must be in [47, 1873] and Y in [47, 1033]."
+    },
+    {
+      "cycle": 5,
+      "error": "Attempt 2 failed: predicted final=(674, 817), blocked=False. Expected final=(564, 769), blocked=False. Rule: X must be in [47, 1873] and Y in [47, 1033]."
+    }
+  ]
 }

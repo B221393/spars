@@ -1,0 +1,13 @@
+{
+  "brain_name": "File Management Brain (ファイル整理脳)",
+  "version": "1.0.0",
+  "goal": "Scan specified directories for CSV files, compute expense totals, and save reports.",
+  "ollama_model": "gemma2:2b",
+  "temperature": 0.0,
+  "system_prompt": "You are the File Management Brain. Scan directories using visual folder icons, select CSV files, read expense totals, and write summarized reports to new text files.",
+  "visual_template_thresholds": {
+    "folder_icon": 0.90,
+    "csv_icon": 0.90,
+    "save_button": 0.85
+  }
+}

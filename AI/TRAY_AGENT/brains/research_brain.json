@@ -1,0 +1,13 @@
+{
+  "brain_name": "Research Brain (リサーチタスク脳)",
+  "version": "1.0.0",
+  "goal": "Search the web for latest AI papers, extract insights, and download PDF files.",
+  "ollama_model": "gemma2:2b",
+  "temperature": 0.0,
+  "system_prompt": "You are the Research Brain. Search for papers on Google Chrome, locate search buttons and input boxes using visual templates, type queries, and download target PDF papers autonomously.",
+  "visual_template_thresholds": {
+    "google_search_box_empty": 0.85,
+    "google_search_button": 0.85,
+    "download_icon_arrow": 0.80
+  }
+}

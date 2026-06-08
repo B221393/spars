@@ -6,12 +6,15 @@ A native Tkinter GUI overlay featuring:
 2. Meta-Prompt AI Planner (interfaces with local gemma2:2b)
 3. Calibration Telemetry (real-time rolling stats parser & radar coordinate target plot)
 4. Automated action dispatcher (writes directly to puppet_hints.json)
+5. Auto-Goal Discovery Engine: Reads STS2 save file telemetry, auto-formulates strategic objectives.
+6. Game Status Telemetry Panel: Live HP progress bar, floor, gold, and room type tracking.
 """
 
 import os
 import sys
 import json
 import time
+import glob
 import requests
 import threading
 import tkinter as tk
@@ -38,11 +41,11 @@ class DesignPluginDashboard:
     def __init__(self, root):
         self.root = root
         self.root.title("Design Plugin - Cognitive Dashboard")
-        self.root.geometry("640x520")
+        self.root.geometry("680x560")
         self.root.configure(bg="#0D0D11")
         self.root.resizable(False, False)
         
-        # Windows styling
+        # Window opacity
         self.root.attributes("-alpha", 0.98)
         
         self.ollama_url = "http://localhost:11434"
@@ -56,7 +59,17 @@ class DesignPluginDashboard:
         self.trend = "Calibrator inactive"
         self.click_history = []
         
+        # Game Telemetry variables
+        self.current_hp = 80
+        self.max_hp = 80
+        self.gold = 99
+        self.floor = 0
+        self.act = 1
+        self.room_type = "unknown"
+        self.last_save_mtime = 0.0
+        
         self.is_thinking = False
+        self.is_discovering_goal = False
         
         self.build_ui()
         self.start_monitoring()
@@ -92,7 +105,7 @@ class DesignPluginDashboard:
         main_paned = tk.Frame(self.root, bg="#0D0D11")
         main_paned.pack(fill="both", expand=True, padx=20, pady=10)
         
-        # Left Panel (Width 360)
+        # Left Panel (Width 380)
         left_panel = tk.Frame(main_paned, bg="#121216", bd=1, relief="flat", highlightbackground="#2C2C3A", highlightthickness=1)
         left_panel.pack(side="left", fill="both", expand=True, padx=(0, 10))
         
@@ -100,10 +113,30 @@ class DesignPluginDashboard:
         tf_lbl = tk.Label(left_panel, text="Meta-Prompt Planner Agent", font=("SF Pro Text", 10, "bold"), fg="#8A8A9E", bg="#121216")
         tf_lbl.pack(anchor="w", padx=15, pady=10)
         
-        # Goal Entry
-        goal_lbl = tk.Label(left_panel, text="Target Objective (High-level Goal)", font=("SF Pro Text", 9), fg="#A259FF", bg="#121216")
-        goal_lbl.pack(anchor="w", padx=15, pady=(5, 2))
+        # Goal Configurator controls
+        goal_control_frame = tk.Frame(left_panel, bg="#121216")
+        goal_control_frame.pack(fill="x", padx=15, pady=(5, 2))
         
+        goal_lbl = tk.Label(goal_control_frame, text="Target Objective", font=("SF Pro Text", 9), fg="#A259FF", bg="#121216")
+        goal_lbl.pack(side="left")
+        
+        self.auto_discover_var = tk.BooleanVar(value=True)
+        self.auto_discover_cb = tk.Checkbutton(
+            goal_control_frame,
+            text="Auto-Discover Goal (AI)",
+            variable=self.auto_discover_var,
+            font=("SF Pro Text", 8, "bold"),
+            fg="#00E5FF",
+            bg="#121216",
+            activebackground="#121216",
+            activeforeground="#00E5FF",
+            selectcolor="#0D0D11",
+            bd=0,
+            highlightthickness=0
+        )
+        self.auto_discover_cb.pack(side="right")
+        
+        # Goal Entry
         self.goal_entry = tk.Entry(
             left_panel, 
             bg="#1C1C24", 
@@ -115,8 +148,8 @@ class DesignPluginDashboard:
             highlightbackground="#2C2C3A", 
             highlightcolor="#A259FF"
         )
-        self.goal_entry.pack(fill="x", padx=15, pady=(0, 10), height=26)
-        self.goal_entry.insert(0, "Slay the Spire 2: Play card 1 on the left monster")
+        self.goal_entry.pack(fill="x", padx=15, pady=(0, 10))
+        self.goal_entry.insert(0, "Slay the Spire 2: Choose Rest at campfire to recover HP")
         
         # Plan Button
         self.plan_btn = tk.Button(
@@ -150,7 +183,7 @@ class DesignPluginDashboard:
             wrap="word"
         )
         self.thought_text.pack(fill="both", expand=True, padx=15, pady=(0, 10))
-        self.thought_text.insert(tk.END, "Ready to plan. Enter a goal above and click 'Generate Action Plan (AI)'.\n")
+        self.thought_text.insert(tk.END, "Ready to plan. Objectives will be auto-formulated if 'Auto-Discover Goal' is active.\n")
         self.thought_text.config(state="disabled")
 
         # Action Command Bar
@@ -177,7 +210,7 @@ class DesignPluginDashboard:
         self.planned_action_lbl = tk.Label(action_bar, textvariable=self.planned_action_var, font=("SF Pro Text", 9, "bold"), fg="#E2E8F0", bg="#121216")
         self.planned_action_lbl.pack(side="right", padx=10)
 
-        # Right Panel (Width 220)
+        # Right Panel (Width 240)
         right_panel = tk.Frame(main_paned, bg="#121216", bd=1, relief="flat", highlightbackground="#2C2C3A", highlightthickness=1)
         right_panel.pack(side="right", fill="both")
         
@@ -204,10 +237,39 @@ class DesignPluginDashboard:
         lbl_trend = tk.Label(right_panel, textvariable=self.trend_var, font=("SF Pro Text", 9, "bold"), fg="#FFC107", bg="#121216", anchor="w")
         lbl_trend.pack(fill="x", padx=15, pady=2)
         
+        # Separator line
+        sep = tk.Frame(right_panel, height=1, bg="#2C2C3A")
+        sep.pack(fill="x", padx=15, pady=10)
+        
+        # Game Telemetry Title
+        game_lbl = tk.Label(right_panel, text="Game Telemetry (STS2)", font=("SF Pro Text", 10, "bold"), fg="#8A8A9E", bg="#121216")
+        game_lbl.pack(anchor="w", padx=15, pady=(0, 5))
+        
+        self.telemetry_floor_var = tk.StringVar(value="Floor: Act 1, Floor 0")
+        self.telemetry_gold_var = tk.StringVar(value="Gold: 99g")
+        self.telemetry_room_var = tk.StringVar(value="Room Type: event")
+        
+        lbl_t_floor = tk.Label(right_panel, textvariable=self.telemetry_floor_var, font=("SF Pro Text", 9), fg="#E2E8F0", bg="#121216", anchor="w")
+        lbl_t_floor.pack(fill="x", padx=15, pady=2)
+        
+        lbl_t_gold = tk.Label(right_panel, textvariable=self.telemetry_gold_var, font=("SF Pro Text", 9), fg="#FFD54F", bg="#121216", anchor="w")
+        lbl_t_gold.pack(fill="x", padx=15, pady=2)
+        
+        lbl_t_room = tk.Label(right_panel, textvariable=self.telemetry_room_var, font=("SF Pro Text", 9), fg="#00E5FF", bg="#121216", anchor="w")
+        lbl_t_room.pack(fill="x", padx=15, pady=2)
+        
+        # HP bar label & Canvas
+        hp_lbl = tk.Label(right_panel, text="Player Health Points:", font=("SF Pro Text", 8), fg="#8A8A9E", bg="#121216")
+        hp_lbl.pack(anchor="w", padx=15, pady=(5, 2))
+        
+        self.hp_bar = tk.Canvas(right_panel, width=190, height=18, bg="#0D0D11", highlightthickness=1, highlightbackground="#2C2C3A")
+        self.hp_bar.pack(padx=15, pady=(0, 10))
+        self.draw_hp_bar(80, 80)
+        
         # Current active brain indicator
         self.active_brain_var = tk.StringVar(value="Active Brain: SPIRE")
         lbl_brain = tk.Label(right_panel, textvariable=self.active_brain_var, font=("SF Pro Text", 9, "bold"), fg="#A259FF", bg="#121216", anchor="w")
-        lbl_brain.pack(fill="x", padx=15, pady=(15, 10))
+        lbl_brain.pack(fill="x", padx=15, pady=(5, 10))
 
     def draw_status_dot(self, color):
         self.status_dot.delete("all")
@@ -218,7 +280,7 @@ class DesignPluginDashboard:
         w, h = 160, 160
         cx, cy = w // 2, h // 2
         
-        # Target concentric circles (15px, 30px, 45px)
+        # Target concentric circles (15px, 35px, 55px)
         self.radar.create_oval(cx - 15, cy - 15, cx + 15, cy + 15, outline="#2C2C3A", width=1)
         self.radar.create_oval(cx - 35, cy - 35, cx + 35, cy + 35, outline="#2C2C3A", width=1)
         self.radar.create_oval(cx - 55, cy - 55, cx + 55, cy + 55, outline="#2C2C3A", width=1)
@@ -241,7 +303,6 @@ class DesignPluginDashboard:
                 dx = item.get("dx", 0)
                 dy = item.get("dy", 0)
                 
-                # Scale coordinate offset (e.g. 1px = 1px on radar)
                 px = cx + int(dx)
                 py = cy + int(dy)
                 
@@ -260,6 +321,28 @@ class DesignPluginDashboard:
         acy = cy + int(round(self.mean_dy))
         self.radar.create_oval(acx - 5, acy - 5, acx + 5, acy + 5, fill="#00E5FF", outline="#FFFFFF", width=1.5)
 
+    def draw_hp_bar(self, current, max_hp):
+        self.hp_bar.delete("all")
+        w, h = 190, 18
+        
+        # Safety bounds
+        ratio = current / max(1, max_hp)
+        fill_w = int(w * ratio)
+        
+        # Color coding by ratio
+        if ratio > 0.5:
+            color = "#00E676" # Green
+        elif ratio > 0.25:
+            color = "#FF9100" # Orange
+        else:
+            color = "#FF1744" # Red
+            
+        # Draw fill
+        self.hp_bar.create_rectangle(0, 0, fill_w, h, fill=color, outline="")
+        
+        # Overlay text
+        self.hp_bar.create_text(w // 2, h // 2, text=f"HP: {current} / {max_hp}", font=("SF Pro Text", 8, "bold"), fill="#FFFFFF")
+
     def log_thought(self, message):
         self.thought_text.config(state="normal")
         self.thought_text.insert(tk.END, message + "\n")
@@ -275,7 +358,7 @@ class DesignPluginDashboard:
             return
             
         self.is_thinking = True
-        self.draw_status_dot("#FF9100") # Pulsing Orange = Thinking
+        self.draw_status_dot("#FF9100") # Thinking
         self.plan_btn.config(state="disabled", text="Thinking...")
         self.thought_text.config(state="normal")
         self.thought_text.delete(1.0, tk.END)
@@ -317,7 +400,7 @@ class DesignPluginDashboard:
             "reason": "1. ユーザーの目的を分析: <目的>。2. 次の行動計画: <理由>。",
             "command": "click" または "nudge" または "none",
             "target_x": 整数 (clickコマンドの場合のX座標),
-            "target_y": 整数 (clickコマンドの場合のY座標),
+            "target_y": 整数 (clickコマンドの場合 Y座標),
             "nudge_dx": 整数 (nudgeコマンドの場合のX方向ピクセル移動値),
             "nudge_dy": 整数 (nudgeコマンドの場合のY方向ピクセル移動値),
             "text": "テキスト入力欄に入力するテキスト（あれば）"
@@ -380,7 +463,6 @@ class DesignPluginDashboard:
         data = self.next_action_data
         hints = {"dx": 0, "dy": 0, "manual_click": None, "manual_click_pct": None}
         
-        # Load existing hints if any
         if os.path.exists(SPIRE_PUPPET_HINTS):
             try:
                 with open(SPIRE_PUPPET_HINTS, "r", encoding="utf-8") as f:
@@ -405,11 +487,121 @@ class DesignPluginDashboard:
         except Exception as e:
             self.log_thought(f"❌ Failed to dispatch command: {e}")
 
+    def load_sts2_save(self):
+        """Scans and parses current_run.save from AppData/Steam userdata directories."""
+        paths = []
+        paths.extend(glob.glob(r"C:\Users\yu_ci\AppData\Roaming\SlayTheSpire2\steam\**\profile*\saves\current_run.save", recursive=True))
+        paths.extend(glob.glob(r"C:\Program Files (x86)\Steam\userdata\*\2868840\remote\**\profile*\saves\current_run.save", recursive=True))
+        
+        paths = [p for p in paths if os.path.exists(p)]
+        if not paths:
+            return None
+            
+        latest_path = max(paths, key=os.path.getmtime)
+        mtime = os.path.getmtime(latest_path)
+        
+        # Return parsed data
+        try:
+            with open(latest_path, "r", encoding="utf-8") as f:
+                return json.load(f), mtime
+        except:
+            return None, 0.0
+
+    def query_goal_discovery(self):
+        if self.is_discovering_goal:
+            return
+            
+        self.is_discovering_goal = True
+        
+        def run():
+            prompt = f"""
+            あなたはSlay the Spire 2の「自動運転用・目的立案AI」です。
+            以下の現在のゲームのメタデータ（テレメトリ）を元に、次に最優先で目指すべき「高レベルの戦略的目標（1文のみ）」を提案してください。
+            余計な説明、挨拶、マークダウンの装飾は一切含めず、目標のテキストのみを出力してください。
+            目標には必ず「Slay the Spire 2: 」というプレフィックスを付けてください。
+            
+            【ゲーム情報】
+            - 部屋タイプ (Room): {self.room_type}
+            - 階層 (Floor): Act {self.act}, Floor {self.floor}
+            - プレイヤーHP: {self.current_hp} / {self.max_hp}
+            - 所持ゴールド: {self.gold}
+            
+            提案目標の例：
+            Slay the Spire 2: Choose Rest at campfire to recover HP
+            Slay the Spire 2: Defeat the monsters in combat
+            Slay the Spire 2: Purchase strong attack card in the shop
+            """
+            
+            payload = {
+                "model": self.model,
+                "prompt": prompt,
+                "stream": False
+            }
+            
+            try:
+                url = f"{self.ollama_url}/api/generate"
+                response = requests.post(url, json=payload, timeout=20)
+                if response.status_code == 200:
+                    discovered_goal = response.json().get("response", "").strip()
+                    # Strip any markdown backticks or quotes if the model wrapped them
+                    discovered_goal = discovered_goal.replace('"', '').replace('`', '').strip()
+                    
+                    if discovered_goal and discovered_goal.startswith("Slay the Spire 2:"):
+                        self.root.after(0, lambda: self.update_goal_entry(discovered_goal))
+            except Exception as e:
+                pass
+            finally:
+                self.is_discovering_goal = False
+                
+        threading.Thread(target=run, daemon=True).start()
+
+    def update_goal_entry(self, new_goal):
+        current = self.goal_entry.get().strip()
+        if current != new_goal:
+            self.goal_entry.delete(0, tk.END)
+            self.goal_entry.insert(0, new_goal)
+            self.log_thought(f"✨ [Goal Discovery] Formulated new objective: '{new_goal}'")
+
     def start_monitoring(self):
-        # Start real-time calibration statistics monitoring
+        # Start real-time monitoring
         def monitor():
             while True:
-                # Search calibration file in both Spire saves and local directory
+                # 1. Load Slay the Spire 2 Save file telemetry
+                save_data, mtime = self.load_sts2_save()
+                if save_data and mtime > self.last_save_mtime:
+                    self.last_save_mtime = mtime
+                    try:
+                        # Extract players metadata
+                        if "players" in save_data and save_data["players"]:
+                            player = save_data["players"][0]
+                            self.current_hp = player.get("current_hp", 80)
+                            self.max_hp = player.get("max_hp", 80)
+                            self.gold = player.get("gold", 99)
+                            
+                        # Extract map coordinate floor progress
+                        visited = save_data.get("visited_map_coords", [])
+                        self.floor = len(visited)
+                        self.act = save_data.get("current_act_index", 0) + 1
+                        
+                        # Extract room type
+                        room_info = save_data.get("pre_finished_room", {})
+                        self.room_type = room_info.get("room_type", "unknown")
+                        
+                        # Update Telemetry Labels
+                        self.telemetry_floor_var.set(f"Floor: Act {self.act}, Floor {self.floor}")
+                        self.telemetry_gold_var.set(f"Gold: {self.gold}g")
+                        self.telemetry_room_var.set(f"Room Type: {self.room_type}")
+                        
+                        # Update HP bar UI
+                        self.root.after(0, lambda: self.draw_hp_bar(self.current_hp, self.max_hp))
+                        
+                        # Trigger Goal Discovery if auto-discover option is checked
+                        if self.auto_discover_var.get():
+                            self.query_goal_discovery()
+                    except:
+                        pass
+                
+                # 2. Search calibration file
                 target_file = None
                 if os.path.exists(SPIRE_CALIBRATION):
                     target_file = SPIRE_CALIBRATION
@@ -427,16 +619,15 @@ class DesignPluginDashboard:
                             self.trend = data.get("trend", "Calibrating...")
                             self.click_history = data.get("click_history", [])
                             
-                            # Update variables
                             self.offset_var.set(f"Offset: dx={self.mean_dx:.1f}px, dy={self.mean_dy:.1f}px")
                             self.std_var.set(f"Variance: sx={self.std_dx:.1f}px, sy={self.std_dy:.1f}px")
                             self.trend_var.set(f"Trend: {self.trend}")
                             
-                            self.update_radar_points()
+                            self.root.after(0, self.update_radar_points)
                     except:
                         pass
                         
-                # Update active brain
+                # 3. Update active brain
                 if os.path.exists(SYSTEM_STATUS):
                     try:
                         with open(SYSTEM_STATUS, "r", encoding="utf-8") as f:

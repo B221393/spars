@@ -12,6 +12,7 @@ import cv2
 import pyautogui
 import requests
 import time
+import win32clipboard
 
 # Reconfigure stdout/stderr to UTF-8
 try:
@@ -19,6 +20,25 @@ try:
     sys.stderr.reconfigure(encoding='utf-8')
 except AttributeError:
     pass
+
+
+def set_clipboard_text(text):
+    """
+    Sets text to the Windows clipboard using CF_UNICODETEXT (13) to prevent IME issues.
+    """
+    try:
+        win32clipboard.OpenClipboard()
+        win32clipboard.EmptyClipboard()
+        win32clipboard.SetClipboardText(text, 13)  # 13 = CF_UNICODETEXT
+        win32clipboard.CloseClipboard()
+        return True
+    except Exception as e:
+        print(f"[Clipboard-Error] Failed to set clipboard text: {e}")
+        try:
+            win32clipboard.CloseClipboard()
+        except:
+            pass
+        return False
 
 
 class LightweightCalibrator:
@@ -57,7 +77,7 @@ class LightweightCalibrator:
 
 
 class AgentHarness:
-    def __init__(self, ollama_url="http://localhost:11434", model="gemma4:8b", safety_margin=50):
+    def __init__(self, ollama_url="http://localhost:11434", model="gemma3:4b", safety_margin=50):
         self.ollama_url = ollama_url
         self.model = model
         
@@ -153,12 +173,17 @@ class AgentHarness:
                 print(f"[Harness-Action] Successfully clicked at coordinate ({final_x}, {final_y}).")
                 return True
             elif action_type == "type":
-                # Move, click to focus, then type
+                # Move, click to focus, then paste via clipboard to bypass Japanese IME
                 pyautogui.moveTo(final_x, final_y, duration=0.3)
                 pyautogui.click()
-                time.sleep(0.1)
-                pyautogui.write(input_text, interval=0.05)
-                print(f"[Harness-Action] Successfully typed text '{input_text}' at ({final_x}, {final_y}).")
+                time.sleep(0.2)
+                if set_clipboard_text(input_text):
+                    pyautogui.hotkey('ctrl', 'v')
+                    time.sleep(0.15)
+                    print(f"[Harness-Action] Successfully pasted text '{input_text}' via clipboard at ({final_x}, {final_y}).")
+                else:
+                    pyautogui.write(input_text, interval=0.05)
+                    print(f"[Harness-Action-Fallback] Successfully typed text '{input_text}' at ({final_x}, {final_y}).")
                 return True
             elif action_type == "wait":
                 print(f"[Harness-Action] Standby wait triggered.")
@@ -216,7 +241,7 @@ class AgentHarness:
 def main():
     parser = argparse.ArgumentParser(description="Gemma 4 8B + OpenCV Agent Harness Driver CLI")
     parser.add_argument("--ollama", type=str, default="http://localhost:11434", help="Ollama base URL.")
-    parser.add_argument("--model", type=str, default="gemma4:8b", help="Model name.")
+    parser.add_argument("--model", type=str, default="gemma3:4b", help="Model name.")
     parser.add_argument("--template", type=str, default="steam_marker.png", help="Template image path.")
     parser.add_argument("--request", type=str, default="画面の更新ボタンを押してください。", help="User request instruction.")
     

@@ -21,7 +21,7 @@ from CORE.ai_driver import AIDriver
 
 
 class AutonomousAgentLoop:
-    def __init__(self, ollama_url="http://localhost:11434", model="gemma4:8b", safety_margin=50, simulate=False):
+    def __init__(self, ollama_url="http://localhost:11434", model="gemma3:4b", safety_margin=50, simulate=False):
         self.simulate = simulate
         self.harness = AgentHarness(ollama_url=ollama_url, model=model, safety_margin=safety_margin)
         
@@ -201,7 +201,7 @@ def main():
     parser = argparse.ArgumentParser(description="Autonomous Agent Self-Healing Loop CLI")
     parser.add_argument("--simulate", action="store_true", help="Run in mock simulation mode.")
     parser.add_argument("--ollama", type=str, default="http://localhost:11434", help="Ollama API base URL.")
-    parser.add_argument("--model", type=str, default="gemma4:8b", help="LLM model name.")
+    parser.add_argument("--model", type=str, default="gemma3:4b", help="LLM model name.")
     parser.add_argument("--goal", type=str, default="ライブラリを開き、安全にアップデートを確認してください。", help="User automation goal.")
     
     args = parser.parse_args()

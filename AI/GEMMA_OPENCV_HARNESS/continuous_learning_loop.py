@@ -130,38 +130,39 @@ def find_canvas_by_color(screen_img):
 # --- Query LLM for Learning ---
 def query_model_for_safety(ollama_url, model, sw, sh, margin, tx, ty, ox, oy, error_history):
     system_prompt = """
-あなたはPC GUI自動操作のエージェントです。
-画面解像度(Width x Height)、安全マージン、LLMが指示したターゲット座標(tx, ty)、およびOpenCVが測定したキャリブレーション補正値(ox, oy)が与えられます。
-補正後の物理ターゲット座標 (final_x, final_y) を計算し、それが安全マージン境界線(セーフティ領域)の内側にあるか、それとも外側にあって遮断されるべきか(Blocked)を判定してください。
+あなたはPC GUI操作の安全判定エージェントです。
+画面の解像度 (sw x sh)、安全マージン (margin)、指示されたターゲット座標 (tx, ty)、OpenCVのキャリブレーション補正値 (ox, oy) から、
+物理座標 (final_x, final_y) を計算し、安全境界の内側にあるか(Safe)・外側にあるか(Blocked)を判定してください。
 
-【判定ルール】
-1. 補正後物理座標: final_x = tx + ox, final_y = ty + oy
-2. 安全限界範囲: 
-   - X方向: margin <= final_x <= Width - margin
-   - Y方向: margin <= final_y <= Height - margin
-3. 物理座標がこの安全限界範囲の中に収まっている場合は is_blocked = false (Safe)
-4. 物理座標が範囲外に出ている場合は is_blocked = true (Blocked)
+【計算＆判定手順】
+1. 物理座標の計算:
+   final_x = tx + ox
+   final_y = ty + oy
+2. 安全境界の判定範囲:
+   margin <= final_x <= sw - margin
+   margin <= final_y <= sh - margin
+3. 上記の範囲に収まっていれば is_blocked を false (安全)、範囲外であれば is_blocked を true (ブロック) とします。
 
-必ず以下のJSONフォーマットのみで回答してください。思考プロセスや解説などの自然言語は一切含めないでください。
+必ず次のJSONフォーマットだけで返答してください。余計なマークダウンや説明は一切含めないでください。
 {
   "final_x": 整数,
   "final_y": 整数,
   "is_blocked": trueまたはfalse,
-  "reason": "判断した具体的な数式と論理"
+  "reason": "具体的な計算式と判定理由"
 }
 """
     user_prompt = f"""
-【画面パラメータ】
-- 解像度 (Width x Height): {sw} x {sh}
+【現在の画面パラメータ】
+- 解像度 (sw x sh): {sw} x {sh}
 - 安全マージン (margin): {margin}
 - 指示座標 (tx, ty): ({tx}, {ty})
 - OpenCV補正 (ox, oy): ({ox}, {oy})
 """
     if error_history:
-        user_prompt += "\n【過去の判定エラー履歴】\n"
+        user_prompt += "\n【過去の誤判定のフィードバック】\n"
         for err in error_history:
             user_prompt += f"- {err}\n"
-        user_prompt += "\n前回の間違いから学習し、今回の計算を自己修正(ヒール)してください。"
+        user_prompt += "\n前回の誤りを参考にして、計算と判定を自己修正(ヒール)してください。"
 
     payload = {
         "model": model,
@@ -173,13 +174,30 @@ def query_model_for_safety(ollama_url, model, sw, sh, margin, tx, ty, ox, oy, er
     try:
         response = requests.post(f"{ollama_url}/api/generate", json=payload, timeout=60)
         if response.status_code == 200:
-            return json.loads(response.json().get("response", "{}"))
+            raw_res = response.json().get("response", "{}").strip()
+            
+            # Clean markdown code fences if present
+            if raw_res.startswith("```"):
+                lines = raw_res.splitlines()
+                if lines[0].startswith("```"):
+                    lines = lines[1:]
+                if lines and lines[-1].startswith("```"):
+                    lines = lines[:-1]
+                raw_res = "\n".join(lines).strip()
+            
+            # Extract JSON boundary in case of prefix/suffix text
+            start = raw_res.find('{')
+            end = raw_res.rfind('}')
+            if start != -1 and end != -1 and end > start:
+                raw_res = raw_res[start:end+1]
+                
+            return json.loads(raw_res)
     except Exception as e:
-        print(f"⚠️ [LLM-Error] Communication failed: {e}", flush=True)
+        print(f"⚠️ [LLM-Error] Communication failed or invalid JSON: {e}", flush=True)
     return None
 
 # --- Main Autopilot Loop ---
-def run_loop(max_cycles=15, model="gemma4:latest", ollama_url="http://localhost:11434"):
+def run_loop(max_cycles=15, model="gemma3:4b", ollama_url="http://localhost:11434"):
     global latest_state, server_running
     
     os.makedirs(GALLERY_DIR, exist_ok=True)
@@ -346,10 +364,17 @@ def run_loop(max_cycles=15, model="gemma4:latest", ollama_url="http://localhost:
     server_running = False
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Continuous Learning and Practice Autopilot Loop")
+    parser.add_argument("--model", type=str, default="gemma3:4b", help="Model name (e.g. gemma3:4b, gemma4:latest)")
+    parser.add_argument("--ollama", type=str, default="http://localhost:11434", help="Ollama API base URL")
+    parser.add_argument("--cycles", type=int, default=10, help="Number of practice cycles")
+    args = parser.parse_args()
+
     # Start HTTP server on port 8123 in background thread
     server_thread = threading.Thread(target=start_server, args=(8123,), daemon=True)
     server_thread.start()
     time.sleep(1.0)  # Wait for server to bind
     
-    # Run loop (10 cycles for automated test run)
-    run_loop(max_cycles=10, model="gemma4:latest")
+    # Run loop
+    run_loop(max_cycles=args.cycles, model=args.model, ollama_url=args.ollama)

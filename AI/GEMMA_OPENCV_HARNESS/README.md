@@ -76,12 +76,18 @@ python autonomous_orchestrator.py
 ```
 
 ### Continuous Learning & Practice Autopilot Loop
-Ensure your local Ollama server is running with your preferred model (e.g. `gemma4:latest` or `gemma3:4b`), then run the continuous loop:
+Ensure your local Ollama server is running with your preferred model. The harness supports both heavy models (`gemma4:latest`) and lightweight/mobile-viable models (`gemma3:4b`), and allows dynamic switching via CLI:
 ```bash
-python continuous_learning_loop.py
+# Run with the default lightweight model (gemma3:4b)
+python continuous_learning_loop.py --model gemma3:4b --cycles 10
+
+# Run with the heavy model
+python continuous_learning_loop.py --model gemma4:latest --cycles 10
 ```
 This will physically control your cursor to calibrate and randomize parameters on the browser, crop images to the `learning_gallery/` directory, and log Ollama validation metrics to `learning_progress.json`.
 
+### Japanese IME & Clipboard Paste Support
+To prevent input corruption caused by Japanese IME (e.g. typing "Slay the Spire" turning into "SぁyてぇSぴれ..."), the harness automatically uses the Windows Clipboard to copy text and performs a `ctrl+v` paste operation instead of simulating keyboard keypresses. This ensures 100% character fidelity across all local desktop environments.
 
 ### Interactive Simulator
 Open **`simulator.html`** in any web browser. 

@@ -9,6 +9,23 @@ import ctypes.wintypes
 import threading
 from PIL import Image
 
+try:
+    _harness_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "GEMMA_OPENCV_HARNESS"))
+    if _harness_dir not in sys.path:
+        sys.path.append(_harness_dir)
+    from agent_harness import LightweightCalibrator
+except Exception as e:
+    print(f"⚠️ [SmartAutomator-Import] Failed to import LightweightCalibrator: {e}")
+    class LightweightCalibrator:
+        def __init__(self, *args, **kwargs):
+            self.mean_dx = 0.0
+            self.mean_dy = 0.0
+        def apply_systematic_correction(self, x, y):
+            return x, y
+        def record_click_feedback(self, *args, **kwargs):
+            pass
+
+
 # Ensure win32 packages are loaded
 try:
     import win32gui
@@ -53,6 +70,13 @@ class SmartAutomator:
         self.puppet_hints_path = puppet_hints_path or os.path.join(self.save_dir, "puppet_hints.json")
         self.log_path = log_path or os.path.join(self.save_dir, "click_coordinates.log")
         self.hist_path = hist_path or os.path.join(self.save_dir, "coordinate_history.json")
+        
+        # Initialize rolling calibrator (習性誤差補正器)
+        self.calibrator = LightweightCalibrator(
+            max_history=100,
+            report_path=os.path.join(self.save_dir, "click_calibration_data.json")
+        )
+
 
     def log(self, message):
         print(f"💪 [SmartAutomator] {message}")
@@ -399,9 +423,14 @@ class SmartAutomator:
         """Simple physical click at targeted coordinates."""
         self.wait_for_active_window()
         x, y = coord
+        
+        # Apply systematic rolling calibration correction
+        corr_x, corr_y = self.calibrator.apply_systematic_correction(x, y)
+        
         ox, oy = self._read_calibration_offset()
-        cx = x + ox
-        cy = y + oy
+        cx = corr_x + ox
+        cy = corr_y + oy
+
         
         self.log_coordinate_event("click_position", coord, (cx, cy), (ox, oy), label, bounds=bounds)
         self.flash_comparison_pointers(coord, (cx, cy), bounds=bounds, label=label)
@@ -419,9 +448,14 @@ class SmartAutomator:
         """
         self.wait_for_active_window()
         x, y = coord
+        
+        # Apply systematic rolling calibration correction
+        corr_x, corr_y = self.calibrator.apply_systematic_correction(x, y)
+        
         ox, oy = self._read_calibration_offset()
-        x += ox
-        y += oy
+        x = corr_x + ox
+        y = corr_y + oy
+
         
         w, h = self._get_client_size()
         target_rx, target_ry = x / w, y / h
@@ -509,9 +543,14 @@ class SmartAutomator:
         self.wait_for_active_window()
         
         tx, ty = target_coord
+        
+        # Apply systematic rolling calibration correction
+        corr_tx, corr_ty = self.calibrator.apply_systematic_correction(tx, ty)
+        
         ox, oy = self._read_calibration_offset()
-        tx += ox
-        ty += oy
+        tx = corr_tx + ox
+        ty = corr_ty + oy
+
 
         # Pre-flight: check failure history
         if self._should_skip_click(tx, ty, label):

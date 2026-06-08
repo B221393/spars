@@ -80,12 +80,24 @@ class SpireBody(SmartAutomator):
                 odx, ody = slsw_offset
                 if abs(odx) > 0.001 or abs(ody) > 0.001:
                     self.log(f"⚖️ [SLSW Feedback] Detected systemic offset: ({odx:.4f}, {ody:.4f}). AI will calibrate.")
+                    try:
+                        w, h = self._get_client_size()
+                        dx_px = int(round(odx * w))
+                        dy_px = int(round(ody * h))
+                        clicked_x = int(round(target_rx * w))
+                        clicked_y = int(round(target_ry * h))
+                        self.calibrator.record_click_feedback(
+                            clicked_x, clicked_y, clicked_x + dx_px, clicked_y + dy_px
+                        )
+                    except Exception as e:
+                        self.log(f"⚠️ [SLSW Feedback Error] Failed to record calibration feedback: {e}")
                     
         return super().click_and_verify(
             coord, label=label, max_shifts=max_shifts, shift_px=shift_px,
             change_threshold=change_threshold, bounds=bounds,
             custom_verify_func=custom_verify
         )
+
 
     @bot_action
     def play_card(self, card_coord, target_coord, card_idx=None):

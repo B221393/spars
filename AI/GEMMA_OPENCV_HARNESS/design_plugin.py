@@ -79,6 +79,7 @@ class DesignPluginDashboard:
         
         self.build_ui()
         self.start_monitoring()
+        self.animate_status_dot()
 
     def build_ui(self):
         # Header Badge
@@ -311,10 +312,53 @@ class DesignPluginDashboard:
         self.active_brain_var = tk.StringVar(value="Active Brain: SPIRE")
         lbl_brain = tk.Label(right_panel, textvariable=self.active_brain_var, font=("SF Pro Text", 9, "bold"), fg="#A259FF", bg="#121216", anchor="w")
         lbl_brain.pack(fill="x", padx=15, pady=(5, 10))
+        
+        # Bind hover transitions for premium micro-animations
+        self.bind_button_hover(self.plan_btn, "#A259FF", "#B370FF")
+        self.bind_button_hover(self.dispatch_btn, "#00E676", "#33FF8A")
+        self.bind_button_hover(self.start_player_btn, "#A259FF", "#B370FF")
+        self.bind_button_hover(self.stop_player_btn, "#FF1744", "#FF4D6A")
+
+    def animate_status_dot(self):
+        if not hasattr(self, '_dot_pulse_val'):
+            self._dot_pulse_val = 0
+            self._dot_pulse_dir = 1
+            
+        self._dot_pulse_val += self._dot_pulse_dir
+        if self._dot_pulse_val >= 6 or self._dot_pulse_val <= 0:
+            self._dot_pulse_dir *= -1
+            
+        # Select base color
+        if self.is_player_running:
+            base_color = "#A259FF"  # Purple
+        elif self.is_thinking:
+            base_color = "#FF9100"  # Orange
+        elif hasattr(self, 'next_action_data') and self.next_action_data:
+            base_color = "#00E676"  # Green
+        else:
+            base_color = "#2979FF"  # Blue
+            
+        self.status_dot.delete("all")
+        # Pulse glow outline
+        r_offset = self._dot_pulse_val // 2
+        self.status_dot.create_oval(6 - r_offset, 6 - r_offset, 6 + r_offset, 6 + r_offset, fill=base_color, outline="")
+        self.status_dot.create_oval(3, 3, 9, 9, fill=base_color, outline="#121216", width=1.5)
+        
+        self.root.after(120, self.animate_status_dot)
 
     def draw_status_dot(self, color):
-        self.status_dot.delete("all")
-        self.status_dot.create_oval(1, 1, 11, 11, fill=color, outline="#121216", width=1.5)
+        # Fallback/override compatible with dynamic animator
+        pass
+
+    def bind_button_hover(self, button, normal_bg, active_bg):
+        def on_enter(e):
+            if button.cget("state") != "disabled":
+                button.config(bg=active_bg)
+        def on_leave(e):
+            if button.cget("state") != "disabled":
+                button.config(bg=normal_bg)
+        button.bind("<Enter>", on_enter)
+        button.bind("<Leave>", on_leave)
 
     def draw_radar_grid(self):
         self.radar.delete("all")
@@ -363,26 +407,36 @@ class DesignPluginDashboard:
         self.radar.create_oval(acx - 5, acy - 5, acx + 5, acy + 5, fill="#00E5FF", outline="#FFFFFF", width=1.5)
 
     def draw_hp_bar(self, current, max_hp):
+        target_ratio = current / max(1, max_hp)
+        self.animate_hp_bar(target_ratio)
+
+    def animate_hp_bar(self, target_ratio):
+        if not hasattr(self, '_current_hp_ratio'):
+            self._current_hp_ratio = 0.0
+            
+        diff = target_ratio - self._current_hp_ratio
+        if abs(diff) < 0.01:
+            self._current_hp_ratio = target_ratio
+        else:
+            self._current_hp_ratio += diff * 0.15
+            
         self.hp_bar.delete("all")
         w, h = 190, 18
+        fill_w = int(w * self._current_hp_ratio)
         
-        # Safety bounds
-        ratio = current / max(1, max_hp)
-        fill_w = int(w * ratio)
-        
-        # Color coding by ratio
-        if ratio > 0.5:
-            color = "#00E676" # Green
-        elif ratio > 0.25:
-            color = "#FF9100" # Orange
+        # Color coding
+        if self._current_hp_ratio > 0.5:
+            color = "#00E676"
+        elif self._current_hp_ratio > 0.25:
+            color = "#FF9100"
         else:
-            color = "#FF1744" # Red
+            color = "#FF1744"
             
-        # Draw fill
         self.hp_bar.create_rectangle(0, 0, fill_w, h, fill=color, outline="")
+        self.hp_bar.create_text(w // 2, h // 2, text=f"HP: {self.current_hp} / {self.max_hp}", font=("SF Pro Text", 8, "bold"), fill="#FFFFFF")
         
-        # Overlay text
-        self.hp_bar.create_text(w // 2, h // 2, text=f"HP: {current} / {max_hp}", font=("SF Pro Text", 8, "bold"), fill="#FFFFFF")
+        if self._current_hp_ratio != target_ratio:
+            self.root.after(30, lambda: self.animate_hp_bar(target_ratio))
 
     def log_thought(self, message):
         self.thought_text.config(state="normal")

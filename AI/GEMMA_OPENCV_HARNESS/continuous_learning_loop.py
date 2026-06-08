@@ -131,23 +131,24 @@ def find_canvas_by_color(screen_img):
 def query_model_for_safety(ollama_url, model, sw, sh, margin, tx, ty, ox, oy, error_history):
     system_prompt = """
 あなたはPC GUI操作の安全判定エージェントです。
-画面の解像度 (sw x sh)、安全マージン (margin)、指示されたターゲット座標 (tx, ty)、OpenCVのキャリブレーション補正値 (ox, oy) から、
 物理座標 (final_x, final_y) を計算し、安全境界の内側にあるか(Safe)・外側にあるか(Blocked)を判定してください。
 
-【計算＆判定手順】
+【判定手順】
 1. 物理座標の計算:
    final_x = tx + ox
    final_y = ty + oy
-2. 安全境界の判定範囲:
-   margin <= final_x <= sw - margin
-   margin <= final_y <= sh - margin
-3. 上記の範囲に収まっていれば is_blocked を false (安全)、範囲外であれば is_blocked を true (ブロック) とします。
+2. 安全境界の判定:
+   margin <= final_x <= sw - margin (かつ) margin <= final_y <= sh - margin
+3. 判定結論:
+   境界内なら is_blocked = false, 境界外なら is_blocked = true
 
-必ず次のJSONフォーマットだけで返答してください。計算と判定の思考プロセス(reason)を最初に書いてから、各数値を決定してください。余計なマークダウンや説明は含めないでください。
+必ず次のJSONフォーマットのみで返答してください。余計な説明やマークダウンは一切含めないでください。
+"reason"には必ず実際のパラメータ数値を当てはめた具体的な計算式を日本語で記述してください。
+
 {
-  "reason": "具体的な計算式と判定理由",
-  "final_x": 整数,
-  "final_y": 整数,
+  "reason": "1. 物理座標計算: final_x = <tx> + <ox> = <計算値>, final_y = <ty> + <oy> = <計算値>。 2. 安全境界判定: <margin> <= final_x <= <sw-margin> かつ <margin> <= final_y <= <sh-margin>。 3. 結論: is_blocked = <trueまたはfalse>",
+  "final_x": 物理座標のX値(計算した整数値),
+  "final_y": 物理座標のY値(計算した整数値),
   "is_blocked": trueまたはfalse
 }
 """

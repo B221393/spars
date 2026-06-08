@@ -45,34 +45,125 @@ class LightweightCalibrator:
     """
     Lightweight local spatial calibrator that tracks the error offset (systematic error/習性誤差)
     between where clicks were executed and where the screen actually responded.
-    Learns the systematic shift dynamically and applies it to offload complex math from heavy LLMs.
+    Maintains a rolling history of the last 100 clicks to dynamically compute statistical averages
+    and patterns, applying the calculated offsets to self-heal coordinates.
     """
-    def __init__(self, alpha=0.5):
-        self.alpha = alpha  # Smoothing factor for running average
-        self.systematic_dx = 0.0
-        self.systematic_dy = 0.0
+    def __init__(self, max_history=100, report_path="click_calibration_data.json"):
+        self.max_history = max_history
+        self.report_path = report_path
         self.click_history = []
+        self.mean_dx = 0.0
+        self.mean_dy = 0.0
+        self.std_dx = 0.0
+        self.std_dy = 0.0
+        self.trend = "No data yet"
+        
+        # Load persistent stats if file exists
+        if os.path.exists(self.report_path):
+            try:
+                with open(self.report_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    self.click_history = data.get("click_history", [])
+                    self.mean_dx = data.get("mean_dx", 0.0)
+                    self.mean_dy = data.get("mean_dy", 0.0)
+                    self.std_dx = data.get("std_dx", 0.0)
+                    self.std_dy = data.get("std_dy", 0.0)
+                    self.trend = data.get("trend", "No data yet")
+            except Exception as e:
+                print(f"[Calibrator-Warning] Failed to load persistent calibration data: {e}")
 
     def record_click_feedback(self, clicked_x, clicked_y, actual_x, actual_y):
         """
-        Record coordinate feedback from visual state change.
+        Record coordinate feedback from visual state change and compute rolling stats.
         """
         dx = actual_x - clicked_x
         dy = actual_y - clicked_y
-        self.click_history.append(((clicked_x, clicked_y), (actual_x, actual_y), (dx, dy)))
         
-        # Update running average of systematic errors (習性誤差の移動平均)
-        self.systematic_dx = self.alpha * dx + (1 - self.alpha) * self.systematic_dx
-        self.systematic_dy = self.alpha * dy + (1 - self.alpha) * self.systematic_dy
-        print(f"📈 [LightweightCalibrator] Click delta: dx={dx}px, dy={dy}px. "
-              f"Updated systematic offset (習性誤差): DX={self.systematic_dx:.2f}px, DY={self.systematic_dy:.2f}px", flush=True)
+        self.click_history.append({
+            "target": [clicked_x, clicked_y],
+            "actual": [actual_x, actual_y],
+            "dx": dx,
+            "dy": dy,
+            "timestamp": time.time()
+        })
+        
+        # Maintain rolling buffer of max_history
+        if len(self.click_history) > self.max_history:
+            self.click_history.pop(0)
+            
+        self.compute_statistics()
+        self.save_calibration_report()
+
+    def compute_statistics(self):
+        """
+        Compute mean, standard deviation, and detect pattern trends for the rolling buffer.
+        """
+        import math
+        n = len(self.click_history)
+        if n == 0:
+            return
+            
+        dxs = [item['dx'] for item in self.click_history]
+        dys = [item['dy'] for item in self.click_history]
+        
+        self.mean_dx = sum(dxs) / n
+        self.mean_dy = sum(dys) / n
+        
+        var_dx = sum((x - self.mean_dx)**2 for x in dxs) / n
+        var_dy = sum((y - self.mean_dy)**2 for y in dys) / n
+        
+        self.std_dx = math.sqrt(var_dx)
+        self.std_dy = math.sqrt(var_dy)
+        
+        # Categorize systematic error pattern
+        trends = []
+        if self.std_dx < 8.0:
+            if self.mean_dx > 10.0:
+                trends.append("Constant shift Right")
+            elif self.mean_dx < -10.0:
+                trends.append("Constant shift Left")
+        if self.std_dy < 8.0:
+            if self.mean_dy > 10.0:
+                trends.append("Constant shift Down")
+            elif self.mean_dy < -10.0:
+                trends.append("Constant shift Up")
+                
+        if not trends:
+            if self.std_dx < 5.0 and self.std_dy < 5.0 and abs(self.mean_dx) <= 5.0 and abs(self.mean_dy) <= 5.0:
+                self.trend = "Centered and accurate"
+            else:
+                self.trend = "Variable/random errors"
+        else:
+            self.trend = " & ".join(trends)
+            
+        print(f"📈 [Calibrator] Stats over {n} points: mean_dx={self.mean_dx:.2f}px, mean_dy={self.mean_dy:.2f}px. "
+              f"Pattern trend: '{self.trend}'", flush=True)
+
+    def save_calibration_report(self):
+        """
+        Saves the stats and history in JSON format.
+        """
+        try:
+            report = {
+                "total_clicks": len(self.click_history),
+                "mean_dx": self.mean_dx,
+                "mean_dy": self.mean_dy,
+                "std_dx": self.std_dx,
+                "std_dy": self.std_dy,
+                "trend": self.trend,
+                "click_history": self.click_history
+            }
+            with open(self.report_path, "w", encoding="utf-8") as f:
+                json.dump(report, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            print(f"[Calibrator-Error] Failed to save calibration report: {e}")
 
     def apply_systematic_correction(self, target_x, target_y):
         """
-        Applies the learned systematic correction locally to the target coordinates.
+        Applies the learned systematic correction locally.
         """
-        corrected_x = target_x + int(round(self.systematic_dx))
-        corrected_y = target_y + int(round(self.systematic_dy))
+        corrected_x = target_x + int(round(self.mean_dx))
+        corrected_y = target_y + int(round(self.mean_dy))
         return corrected_x, corrected_y
 
 
@@ -137,6 +228,9 @@ class AgentHarness:
             
             print(f"[Harness-Vision] Target found! Position: ({detected_x}, {detected_y}), confidence: {max_val:.4f}")
             
+            # Save temporary copy for cropping
+            cv2.imwrite("matched_temp_screen.png", screen_img)
+            
             if os.path.exists(screenshot_path):
                 os.remove(screenshot_path)
             return (detected_x, detected_y)
@@ -145,6 +239,47 @@ class AgentHarness:
             os.remove(screenshot_path)
         print(f"[Harness-Vision] Target match failed. Max confidence was: {max_val:.4f}")
         return None
+
+    def click_template_on_screen(self, template_image_path, confidence_threshold=0.8):
+        """
+        Takes a screenshot, performs template matching to find the template (e.g. arrow),
+        and if match confidence exceeds the threshold, executes a corrected click on its center.
+        """
+        pos = self.run_calibration(template_image_path, confidence=confidence_threshold)
+        if pos:
+            detected_x, detected_y = pos
+            print(f"[Harness-TemplateClick] Template '{template_image_path}' matched at ({detected_x}, {detected_y}).")
+            
+            # Crop matched area for visual validation
+            if os.path.exists("matched_temp_screen.png"):
+                try:
+                    screen_img = cv2.imread("matched_temp_screen.png")
+                    template_img = cv2.imread(template_image_path)
+                    if screen_img is not None and template_img is not None:
+                        t_h, t_w, _ = template_img.shape
+                        # Reconstruct bounding box
+                        x1 = max(0, detected_x - t_w // 2)
+                        y1 = max(0, detected_y - t_h // 2)
+                        x2 = min(screen_img.shape[1], x1 + t_w)
+                        y2 = min(screen_img.shape[0], y1 + t_h)
+                        
+                        crop = screen_img[y1:y2, x1:x2]
+                        os.makedirs("learning_gallery", exist_ok=True)
+                        crop_path = f"learning_gallery/matched_button_{int(time.time())}.png"
+                        cv2.imwrite(crop_path, crop)
+                        print(f"[Harness-TemplateClick] Saved matched crop snippet to: {crop_path}")
+                except Exception as e:
+                    print(f"[Harness-TemplateClick-Warning] Failed to crop matched button: {e}")
+                finally:
+                    try: os.remove("matched_temp_screen.png")
+                    except: pass
+            
+            # Execute physical interaction with corrected coordinates
+            success = self.execute_safe_action(detected_x, detected_y, action_type="click")
+            return success
+        else:
+            print(f"[Harness-TemplateClick] Match failed for '{template_image_path}'. No click executed.")
+            return False
 
     def execute_safe_action(self, target_x, target_y, action_type="click", input_text=""):
         """

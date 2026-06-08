@@ -1,7 +1,7 @@
 {
-  "total_runs": 15,
-  "successful_judgments": 12,
-  "self_healings": 2,
+  "total_runs": 25,
+  "successful_judgments": 19,
+  "self_healings": 4,
   "errors_logged": [
     {
       "cycle": 1,
@@ -34,6 +34,38 @@
     {
       "cycle": 5,
       "error": "Attempt 2 failed: predicted final=(674, 817), blocked=False. Expected final=(564, 769), blocked=False. Rule: X must be in [47, 1873] and Y in [47, 1033]."
+    },
+    {
+      "cycle": 1,
+      "error": "Attempt 1 failed: predicted final=(440, 330), blocked=False. Expected final=(440, 270), blocked=False. Rule: X must be in [60, 1220] and Y in [60, 660]."
+    },
+    {
+      "cycle": 2,
+      "error": "Attempt 1 failed: predicted final=(1109, 27), blocked=False. Expected final=(1109, 27), blocked=True. Rule: X must be in [57, 1863] and Y in [57, 1023]."
+    },
+    {
+      "cycle": 3,
+      "error": "Attempt 1 failed: predicted final=(384, 229), blocked=False. Expected final=(232, 71), blocked=False. Rule: X must be in [34, 1246] and Y in [34, 686]."
+    },
+    {
+      "cycle": 3,
+      "error": "Attempt 2 failed: predicted final=(384, 229), blocked=False. Expected final=(232, 71), blocked=False. Rule: X must be in [34, 1246] and Y in [34, 686]."
+    },
+    {
+      "cycle": 4,
+      "error": "Attempt 1 failed: predicted final=(503, 751), blocked=True. Expected final=(503, 751), blocked=False. Rule: X must be in [34, 1886] and Y in [34, 1046]."
+    },
+    {
+      "cycle": 4,
+      "error": "Attempt 2 failed: predicted final=(585, 831), blocked=False. Expected final=(503, 751), blocked=False. Rule: X must be in [34, 1886] and Y in [34, 1046]."
+    },
+    {
+      "cycle": 5,
+      "error": "Attempt 1 failed: predicted final=(1027, 185), blocked=False. Expected final=(897, 185), blocked=False. Rule: X must be in [57, 1223] and Y in [57, 663]."
+    },
+    {
+      "cycle": 5,
+      "error": "Attempt 2 failed: predicted final=(1027, 185), blocked=False. Expected final=(897, 185), blocked=False. Rule: X must be in [57, 1223] and Y in [57, 663]."
     }
   ]
 }

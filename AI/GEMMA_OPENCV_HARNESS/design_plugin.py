@@ -17,6 +17,7 @@ import time
 import glob
 import requests
 import threading
+import subprocess
 import tkinter as tk
 from tkinter import ttk
 
@@ -41,7 +42,7 @@ class DesignPluginDashboard:
     def __init__(self, root):
         self.root = root
         self.root.title("Design Plugin - Cognitive Dashboard")
-        self.root.geometry("680x560")
+        self.root.geometry("680x600")
         self.root.configure(bg="#0D0D11")
         self.root.resizable(False, False)
         
@@ -70,6 +71,9 @@ class DesignPluginDashboard:
         
         self.is_thinking = False
         self.is_discovering_goal = False
+        
+        self.player_process = None
+        self.is_player_running = False
         
         self.build_ui()
         self.start_monitoring()
@@ -209,6 +213,41 @@ class DesignPluginDashboard:
         self.planned_action_var = tk.StringVar(value="None")
         self.planned_action_lbl = tk.Label(action_bar, textvariable=self.planned_action_var, font=("SF Pro Text", 9, "bold"), fg="#E2E8F0", bg="#121216")
         self.planned_action_lbl.pack(side="right", padx=10)
+
+        # AGI Autonomous Player Bar
+        agi_bar = tk.Frame(left_panel, bg="#121216")
+        agi_bar.pack(fill="x", padx=15, pady=(0, 15))
+        
+        self.start_player_btn = tk.Button(
+            agi_bar, 
+            text="Start Autonomous Player", 
+            font=("SF Pro Text", 9, "bold"), 
+            bg="#A259FF", 
+            fg="#FFFFFF", 
+            activebackground="#8E44AD", 
+            activeforeground="#FFFFFF",
+            bd=0, 
+            padx=10, 
+            pady=5, 
+            command=self.start_autonomous_player
+        )
+        self.start_player_btn.pack(side="left")
+        
+        self.stop_player_btn = tk.Button(
+            agi_bar, 
+            text="Stop Player", 
+            font=("SF Pro Text", 9, "bold"), 
+            bg="#FF1744", 
+            fg="#FFFFFF", 
+            activebackground="#D50000", 
+            activeforeground="#FFFFFF",
+            bd=0, 
+            padx=10, 
+            pady=5, 
+            command=self.stop_autonomous_player,
+            state="disabled"
+        )
+        self.stop_player_btn.pack(side="left", padx=10)
 
         # Right Panel (Width 240)
         right_panel = tk.Frame(main_paned, bg="#121216", bd=1, relief="flat", highlightbackground="#2C2C3A", highlightthickness=1)
@@ -640,6 +679,67 @@ class DesignPluginDashboard:
                 time.sleep(2.0)
                 
         threading.Thread(target=monitor, daemon=True).start()
+
+    def start_autonomous_player(self):
+        if self.is_player_running:
+            return
+            
+        self.is_player_running = True
+        self.draw_status_dot("#A259FF") # Purple for active autonomous player
+        self.start_player_btn.config(state="disabled")
+        self.stop_player_btn.config(state="normal")
+        self.log_thought("🚀 Starting AGI Closed-Loop Autonomous Player...")
+        
+        threading.Thread(target=self.run_player_subprocess, daemon=True).start()
+
+    def run_player_subprocess(self):
+        player_script = os.path.join(GENRE_DIR, "GAME", "SPIRE", "autonomous_mcp_player.py")
+        
+        try:
+            self.player_process = subprocess.Popen(
+                [sys.executable, "-u", player_script],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                encoding='utf-8',
+                errors='replace'
+            )
+            
+            for line in iter(self.player_process.stdout.readline, ""):
+                if not self.is_player_running:
+                    break
+                self.root.after(0, lambda l=line.strip(): self.log_thought(l))
+                
+            self.player_process.stdout.close()
+            self.player_process.wait()
+        except Exception as e:
+            self.root.after(0, lambda: self.log_thought(f"❌ Subprocess error: {e}"))
+        finally:
+            self.root.after(0, self.cleanup_player)
+
+    def stop_autonomous_player(self):
+        if not self.is_player_running:
+            return
+        self.log_thought("🛑 Stopping Autonomous Player...")
+        self.is_player_running = False
+        if self.player_process:
+            try:
+                self.player_process.terminate()
+                self.player_process.wait(timeout=2.0)
+            except:
+                try:
+                    self.player_process.kill()
+                except:
+                    pass
+        self.cleanup_player()
+
+    def cleanup_player(self):
+        self.is_player_running = False
+        self.draw_status_dot("#2979FF") # Blue for ready
+        self.start_player_btn.config(state="normal")
+        self.stop_player_btn.config(state="disabled")
+        self.log_thought("🔌 Autonomous Player stopped.")
 
 def main():
     root = tk.Tk()

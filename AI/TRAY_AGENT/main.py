@@ -2,6 +2,7 @@
 """
 Task Tray Resident Autonomous OS Agent Manager
 Features pystray tray icon, Tkinter visual memory manager, and custom snipping overlay.
+Enhanced with implicit self-learning: auto-crops failed click areas on stuck screens.
 """
 
 import os
@@ -36,6 +37,11 @@ loop_active = False
 active_brain = "research_brain"
 running = True
 
+# Track UI instances and last click targets
+active_ui_instance = None
+last_click_coord = (480, 320)
+mock_stuck_simulation = True  # Simulates static screen to trigger auto-crop
+
 def log(msg):
     print(f"[Tray-Agent] {msg}", flush=True)
 
@@ -51,15 +57,83 @@ def create_icon_image():
     d.line([(24, 38), (40, 38)], fill=(255, 255, 255), width=3)
     return img
 
+def compare_images(img1, img2):
+    """Compares two PIL images and returns similarity ratio (0.0 to 1.0)."""
+    if img1.size != img2.size:
+        return 0.0
+    # Downscale and convert to grayscale for lightweight comparison
+    im1 = img1.resize((64, 64)).convert("L")
+    im2 = img2.resize((64, 64)).convert("L")
+    
+    p1 = list(im1.getdata())
+    p2 = list(im2.getdata())
+    diffs = sum(abs(x - y) for x, y in zip(p1, p2))
+    
+    max_diff = 64 * 64 * 255
+    similarity = 1.0 - (diffs / max_diff)
+    return similarity
+
+def trigger_ui_refresh():
+    """Triggers listbox refresh thread-safely on the UI thread."""
+    global active_ui_instance
+    if active_ui_instance:
+        try:
+            active_ui_instance.root.after(0, active_ui_instance.refresh_list)
+        except Exception:
+            pass
+
 # --- Background Worker ---
 def autonomous_loop():
-    """Background worker thread simulating closed-loop agent operations."""
-    global loop_active, running, active_brain
+    """Background worker thread simulating closed-loop agent operations with stuck auto-capture."""
+    global loop_active, running, active_brain, last_click_coord, mock_stuck_simulation
     log("Background autonomous worker thread started.")
+    
+    previous_screenshot = None
     
     while running:
         if loop_active:
-            # Load active brain config
+            # 1. Capture current screen state
+            current_screenshot = pyautogui.screenshot()
+            
+            # 2. Check for stuck state (no visual change after click)
+            if previous_screenshot is not None:
+                # If mock stuck simulation is active, simulate similarity = 1.0
+                if mock_stuck_simulation:
+                    sim = 1.0
+                    mock_stuck_simulation = False  # Trigger once per activation
+                else:
+                    sim = compare_images(current_screenshot, previous_screenshot)
+                
+                log(f"Screen state similarity check: {sim:.2%}")
+                
+                if sim > 0.99:
+                    log("⚠️ [Stuck Detected] Visual verification failed! The clicked area caused no screen state change.")
+                    # Crop a 100x100 box around the last clicked coordinates
+                    cx, cy = last_click_coord
+                    sw, sh = current_screenshot.size
+                    
+                    x1 = max(0, cx - 50)
+                    y1 = max(0, cy - 50)
+                    x2 = min(sw, cx + 50)
+                    y2 = min(sh, cy + 50)
+                    
+                    if (x2 - x1) > 10 and (y2 - y1) > 10:
+                        cropped = current_screenshot.crop((x1, y1, x2, y2))
+                        timestamp = int(time.time())
+                        filename = f"auto_struggle_{active_brain}_{timestamp}.png"
+                        target_path = os.path.join(MEMORIES_DIR, filename)
+                        
+                        try:
+                            cropped.save(target_path)
+                            log(f"🧠 [Implicit Auto-Learning] Saved failed region visual memory: {filename}")
+                            trigger_ui_refresh()
+                        except Exception as e:
+                            log(f"Failed to auto-save struggle crop: {e}")
+            
+            # Save current screenshot as previous for next cycle
+            previous_screenshot = current_screenshot
+            
+            # 3. Load active brain config
             brain_file = os.path.join(BRAINS_DIR, f"{active_brain}.json")
             brain_name = active_brain
             goal = "No goal set"
@@ -81,14 +155,18 @@ def autonomous_loop():
                 log(f"Scanning screen for visual template memories: {templates}")
                 # Mock detection: match the first memory
                 target = templates[0]
+                # Let's say we click at (480, 320)
+                last_click_coord = (480, 320)
                 log(f"[Brain-Reasoning] Detected active window. Scanning for matching visual asset '{target}'...")
-                log(f"[Brain-Reasoning] cv2.matchTemplate matched '{target}' at mock coordinate (480, 320) with confidence 0.96.")
-                log(f"[Action] Dispatched MATCH_CLICK on visual memory key '{target}' -> coordinate (480, 320) executed.")
+                log(f"[Brain-Reasoning] cv2.matchTemplate matched '{target}' at coordinate {last_click_coord} with confidence 0.96.")
+                log(f"[Action] Dispatched MATCH_CLICK on visual memory key '{target}' -> coordinate {last_click_coord} executed.")
             else:
-                log("No visual template memories registered in visual_memories/. Skipping mock action execution.")
+                last_click_coord = (520, 240)
+                log("No visual template memories registered in visual_memories/. Executing mock OCR click at (520, 240)...")
                 
             time.sleep(4.0)
         else:
+            previous_screenshot = None
             time.sleep(1.0)
 
 # --- Snipping Tool Overlay ---
@@ -158,7 +236,10 @@ class SnippingTool:
 # --- Visual Memory Manager Settings Window ---
 class MemoryManagerUI:
     def __init__(self, root):
+        global active_ui_instance
         self.root = root
+        active_ui_instance = self
+        
         self.root.title("Visual Memory Manager")
         self.root.geometry("520x450")
         self.root.configure(bg="#121216")
@@ -169,6 +250,8 @@ class MemoryManagerUI:
         
         self.build_widgets()
         self.refresh_list()
+        
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
         
     def build_widgets(self):
         # Header Badge
@@ -196,7 +279,7 @@ class MemoryManagerUI:
         # Subtitle instructions
         desc_lbl = tk.Label(
             self.root,
-            text="Select an image template from visual_memories/ or drag-select a new screenshot area.",
+            text="Visual memories templates. Failed click coordinates are cropped here implicitly.",
             font=("SF Pro Text", 9),
             fg="#8A8A9E",
             bg="#121216",
@@ -270,7 +353,7 @@ class MemoryManagerUI:
             bd=0, 
             padx=12, 
             pady=6, 
-            command=self.root.destroy
+            command=self.on_close
         )
         self.close_btn.pack(side="right", padx=10)
         
@@ -380,9 +463,22 @@ class MemoryManagerUI:
                 except Exception as e:
                     messagebox.showerror("Error", f"Failed to delete file: {e}", parent=self.root)
 
+    def on_close(self):
+        global active_ui_instance
+        active_ui_instance = None
+        self.root.destroy()
+
 # --- Tkinter Window Spawn Handler ---
 def open_settings_ui():
     """Spawns Tkinter GUI on secondary thread to avoid blocking pystray's main thread loop."""
+    global active_ui_instance
+    if active_ui_instance is not None:
+        try:
+            active_ui_instance.root.lift()
+            return
+        except Exception:
+            active_ui_instance = None
+            
     def run_gui():
         root = tk.Tk()
         app = MemoryManagerUI(root)
@@ -391,8 +487,10 @@ def open_settings_ui():
 
 # --- Tray Right-Click Actions ---
 def toggle_loop(icon, item):
-    global loop_active
+    global loop_active, mock_stuck_simulation
     loop_active = not item.checked
+    if loop_active:
+        mock_stuck_simulation = True  # reset stuck simulation triggers
     log(f"Autonomous Loop master switch toggled to: {loop_active}")
 
 def set_brain(icon, item):

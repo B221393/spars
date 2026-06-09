@@ -282,11 +282,30 @@ def capture_window(hwnd):
     
     return img.convert("RGB")
 
+def load_calibration_offset():
+    """Loads calibration offsets from telemetry files if available."""
+    cal_paths = [
+        os.path.join(BASE_DIR, "..", "GEMMA_OPENCV_HARNESS", "click_calibration_data.json"),
+        os.path.join(BASE_DIR, "..", "..", "GAME", "SPIRE", "saves", "click_calibration_data.json")
+    ]
+    for path in cal_paths:
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    return data.get("mean_dx", 0.0), data.get("mean_dy", 0.0)
+            except Exception:
+                pass
+    return 0.0, 0.0
+
 def send_background_click(hwnd, x, y):
-    """Sends mouse click messages directly into the target window's queue."""
+    """Sends mouse hover and click messages directly into the target window's queue."""
     if not hwnd or not ctypes.windll.user32.IsWindow(hwnd):
         return
     lParam = (y << 16) | (x & 0xFFFF)
+    # Send WM_MOUSEMOVE (0x0200) to simulate hover focus
+    ctypes.windll.user32.PostMessageW(hwnd, 0x0200, 0, lParam)
+    time.sleep(0.05)
     ctypes.windll.user32.PostMessageW(hwnd, WM_LBUTTONDOWN, 1, lParam)
     time.sleep(0.05)
     ctypes.windll.user32.PostMessageW(hwnd, WM_LBUTTONUP, 0, lParam)
@@ -451,6 +470,13 @@ def autonomous_loop():
                 if match_result:
                     coord, val = match_result
                     
+                    # Apply calibration offset (誤差修正)
+                    cal_dx, cal_dy = load_calibration_offset()
+                    if cal_dx != 0.0 or cal_dy != 0.0:
+                        calibrated_coord = (coord[0] + int(round(cal_dx)), coord[1] + int(round(cal_dy)))
+                        log(f"🔧 [Calibration Offset] Applied offset dx={cal_dx:.1f}, dy={cal_dy:.1f} to {coord} -> {calibrated_coord}")
+                        coord = calibrated_coord
+                    
                     # Stuck Recovery Phase 1: Coordinate Nudging (Cycles 1, 2)
                     if consecutive_stuck_count in [1, 2]:
                         import random
@@ -469,8 +495,17 @@ def autonomous_loop():
                         log(f"Sending background click to {target_desc} at client coordinate {coord}")
                         send_background_click(target_hwnd, coord[0], coord[1])
                     else:
-                        log(f"Sending physical click at coordinate {coord}")
-                        pyautogui.click(coord[0], coord[1])
+                        # Map client coord to screen absolute coord for pyautogui if window context is active
+                        if background_mode and target_hwnd and ctypes.windll.user32.IsWindow(target_hwnd):
+                            pt = ctypes.wintypes.POINT(coord[0], coord[1])
+                            ctypes.windll.user32.ClientToScreen(target_hwnd, ctypes.byref(pt))
+                            screen_x, screen_y = pt.x, pt.y
+                            log(f"Sending physical click mapped from client {coord} to screen ({screen_x}, {screen_y})")
+                        else:
+                            screen_x, screen_y = coord[0], coord[1]
+                            log(f"Sending physical click at coordinate ({screen_x}, {screen_y})")
+                            
+                        pyautogui.click(screen_x, screen_y)
                     break
             
             if not match_found:

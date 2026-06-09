@@ -16,7 +16,7 @@ if %errorlevel% neq 0 (
 )
 
 :: Launch python script silently using pythonw (no terminal window)
-start "" pythonw main.py
+start "" pythonw main.py %*
 
 echo.
 echo [Success] Tray agent launched in the background!

@@ -21,6 +21,7 @@ import cv2
 import numpy as np
 import ctypes
 import ctypes.wintypes
+import argparse
 
 # Reconfigure stdout/stderr to UTF-8
 try:
@@ -1001,7 +1002,43 @@ def clean_exit(icon):
     sys.exit(0)
 
 def main():
-    global global_tray_icon
+    global global_tray_icon, loop_active, active_brain, background_mode, target_hwnd, target_window_title
+    
+    parser = argparse.ArgumentParser(description="Task Tray Resident Autonomous OS Agent Manager CLI")
+    parser.add_argument("--target", type=str, help="Target window title pattern to select automatically")
+    parser.add_argument("--brain", type=str, help="Active brain profile name to configure on launch")
+    parser.add_argument("--background", action="store_true", help="Enable background automation mode")
+    parser.add_argument("--autostart", action="store_true", help="Start the autonomous loop immediately on launch")
+    
+    args = parser.parse_args()
+    
+    if args.brain:
+        active_brain = args.brain
+        log(f"Configuring brain from CLI: {active_brain}")
+        
+    if args.background:
+        background_mode = True
+        log("Enabling background automation mode from CLI.")
+        
+    if args.target:
+        target_pattern = args.target.lower()
+        log(f"Searching for target window matching pattern: '{args.target}'")
+        win_list = scan_visible_windows()
+        found = False
+        for hwnd, title in win_list:
+            if target_pattern in title.lower():
+                target_hwnd = hwnd
+                target_window_title = title
+                found = True
+                log(f"Auto-selected window from CLI target pattern: '{title}' (HWND: {hwnd})")
+                break
+        if not found:
+            log(f"Warning: No window matching pattern '{args.target}' found.")
+            
+    if args.autostart:
+        loop_active = True
+        log("Autostarting autonomous loop from CLI.")
+        
     # Start background loop thread
     threading.Thread(target=autonomous_loop, daemon=True).start()
     

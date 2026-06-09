@@ -72,7 +72,15 @@ ABBREVIATION_MAP = {
     "ズーム": ["zoom"],
     "チームズ": ["teams", "microsoft teams"],
     "ノート": ["notepad", "memo"],
-    "ペイント": ["paint", "mspaint"]
+    "ペイント": ["paint", "mspaint"],
+    "ブラウザ": ["chrome", "google chrome", "edge", "microsoft edge", "firefox", "browser"],
+    "エッジ": ["edge", "microsoft edge"],
+    "マイクラ": ["minecraft"],
+    "フォトショ": ["photoshop"],
+    "イラレ": ["illustrator"],
+    "メモ帳": ["notepad"],
+    "タスクマネージャー": ["taskmgr", "task manager"],
+    "コマプロ": ["cmd", "command prompt", "powershell"]
 }
 
 # OpenClaw Local LLM Chat Assistant System Prompts
@@ -804,6 +812,20 @@ class MemoryManagerUI:
         self.bg_mode_cb = tk.Checkbutton(grind_frame, text="Enable Background Automation (Win32)", variable=self.bg_mode_var, font=("SF Pro Text", 9, "bold"), fg="#FFFFFF", bg="#26262E", activebackground="#26262E", activeforeground="#FFFFFF", selectcolor="#16161D", bd=0, command=self.on_bg_toggle)
         self.bg_mode_cb.pack(anchor="w", padx=15, pady=2)
         
+        # Abbreviation Search Input
+        abbr_frame = tk.Frame(grind_frame, bg="#26262E")
+        abbr_frame.pack(fill="x", padx=15, pady=(2, 4))
+        
+        abbr_lbl = tk.Label(abbr_frame, text="Abbr / Keyword Search:", font=("SF Pro Text", 9), fg="#8E8E93", bg="#26262E")
+        abbr_lbl.pack(side="left")
+        
+        self.abbr_entry = tk.Entry(abbr_frame, bg="#16161D", fg="#FFFFFF", insertbackground="#FFFFFF", font=("SF Pro Text", 9), bd=0, highlightthickness=1, highlightbackground="#3E3E4C", highlightcolor="#0A84FF", width=38)
+        self.abbr_entry.pack(side="left", padx=10, ipady=2)
+        self.abbr_entry.bind("<Return>", lambda e: self.infer_target_from_gui())
+        
+        self.abbr_btn = PillButton(abbr_frame, "Infer", self.infer_target_from_gui, bg_color="#0A84FF", active_color="#0066CC", width=60, height=24, font=("SF Pro Text", 8, "bold"))
+        self.abbr_btn.pack(side="left")
+        
         win_select_frame = tk.Frame(grind_frame, bg="#26262E")
         win_select_frame.pack(fill="x", padx=15, pady=2)
         
@@ -903,12 +925,79 @@ class MemoryManagerUI:
         
         threading.Thread(target=self.process_chat_query, args=(query,), daemon=True).start()
 
+    def check_and_apply_target_command(self, query):
+        intent_keywords = ["ターゲット", "操作", "切り替え", "対象", "window", "target", "にして", "に変え", "設定", "選んで", "選択"]
+        if not any(k in query.lower() for k in intent_keywords):
+            return None
+            
+        win_list = scan_visible_windows()
+        matched_key = None
+        patterns_to_check = []
+        
+        for key, mappings in ABBREVIATION_MAP.items():
+            if key in query or key.lower() in query.lower():
+                matched_key = key
+                patterns_to_check = [key] + mappings
+                break
+                
+        if not matched_key:
+            for key, mappings in ABBREVIATION_MAP.items():
+                for m in mappings:
+                    if m.lower() in query.lower():
+                        matched_key = key
+                        patterns_to_check = [key] + mappings
+                        break
+                if matched_key:
+                    break
+                    
+        if not matched_key:
+            for hwnd, title in win_list:
+                clean_title = re.sub(r'[^a-zA-Z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]', ' ', title)
+                words = clean_title.split()
+                for w in words:
+                    if len(w) >= 2 and w.lower() in query.lower() and w.lower() not in ["window", "target", "google", "microsoft"]:
+                        patterns_to_check = [title]
+                        break
+                if patterns_to_check:
+                    break
+                    
+        best_hwnd = None
+        best_title = None
+        
+        if patterns_to_check:
+            for hwnd, title in win_list:
+                if any(pat.lower() in title.lower() for pat in patterns_to_check):
+                    best_hwnd = hwnd
+                    best_title = title
+                    break
+                    
+        if best_hwnd:
+            global target_hwnd, target_window_title
+            target_hwnd = best_hwnd
+            target_window_title = best_title
+            self.root.after(0, self.refresh_windows_list)
+            display_name = matched_key if matched_key else best_title
+            return f"🎯 **OpenClaw Target Switcher**:\nInferred abbreviation/term: '**{display_name}**'\nSuccessfully set target window to: '**{best_title}**' (HWND: {best_hwnd})."
+        else:
+            if matched_key:
+                return f"🔍 **OpenClaw Target Switcher**:\nInferred abbreviation/term: '**{matched_key}**'\nChecked patterns: {patterns_to_check}\nHowever, no running window matching these patterns was found. Please make sure the application is open."
+                
+        return None
+
     def process_chat_query(self, query):
         if not hasattr(self, "chat_history"):
             self.chat_history = []
             
         self.chat_history.append({"role": "user", "content": query})
         
+        target_response = self.check_and_apply_target_command(query)
+        if target_response:
+            self.append_chat_log("OpenClaw", target_response, "claw")
+            self.chat_history.append({"role": "assistant", "content": target_response})
+            if len(self.chat_history) > 30:
+                self.chat_history = self.chat_history[-30:]
+            return
+            
         allow_search = self.search_var.get()
         system_prompt = OPENCLAW_SYSTEM_PROMPT if allow_search else "You are OpenClaw, a premium local AI desktop assistant."
         
@@ -1034,6 +1123,36 @@ class MemoryManagerUI:
         if idx >= 0:
             target_hwnd, target_window_title = self.win_list[idx]
             log(f"Target background window set to: '{target_window_title}' (HWND: {target_hwnd})")
+
+    def infer_target_from_gui(self):
+        query = self.abbr_entry.get().strip()
+        if not query:
+            return
+            
+        win_list = scan_visible_windows()
+        target_pattern = query.lower()
+        patterns_to_check = [target_pattern]
+        
+        for key, mappings in ABBREVIATION_MAP.items():
+            if target_pattern == key.lower() or key.lower() in target_pattern:
+                patterns_to_check.extend([m.lower() for m in mappings])
+                break
+                
+        found = False
+        global target_hwnd, target_window_title
+        
+        for hwnd, title in win_list:
+            if any(pat in title.lower() for pat in patterns_to_check):
+                target_hwnd = hwnd
+                target_window_title = title
+                found = True
+                log(f"🎯 GUI Abbreviation Match: '{query}' resolved to '{title}' (HWND: {hwnd})")
+                self.refresh_windows_list()
+                messagebox.showinfo("Target Found", f"Successfully matched and set target window:\n\n{title}", parent=self.root)
+                break
+                
+        if not found:
+            messagebox.showwarning("Not Found", f"No running window matched abbreviation/keyword: '{query}'\nChecked patterns: {patterns_to_check}", parent=self.root)
 
     def on_bg_toggle(self):
         global background_mode

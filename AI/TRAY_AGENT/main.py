@@ -2,7 +2,8 @@
 """
 Task Tray Resident Autonomous OS Agent Manager
 Features pystray tray icon, Tkinter visual memory manager, and custom snipping overlay.
-Enhanced with real OpenCV template matching, image previews, and scrolling logs console.
+Styled after PlayStation Design Specs (Pill buttons, flat color blocks, dark canvas).
+Enhanced with multi-scale template matching & self-healing minimized window restoration.
 """
 
 import os
@@ -40,6 +41,7 @@ os.makedirs(MEMORIES_DIR, exist_ok=True)
 loop_active = False
 active_brain = "research_brain"
 running = True
+global_tray_icon = None
 
 # Background mode states
 background_mode = False
@@ -49,36 +51,118 @@ target_window_title = "None"
 # Track UI instances and last click targets
 active_ui_instance = None
 last_click_coord = (480, 320)
-mock_stuck_simulation = False  # Set False since we have real matching now
+mock_stuck_simulation = False
 
 # Win32 Constants
 WM_LBUTTONDOWN = 0x0201
 WM_LBUTTONUP = 0x0202
 WM_KEYDOWN = 0x0100
 WM_KEYUP = 0x0101
+SW_SHOWNOACTIVATE = 4
+
+# --- Custom PlayStation Pill Button Widget ---
+class PillButton(tk.Canvas):
+    def __init__(self, parent, text, command, bg_color="#0070d1", active_color="#0064b7", fg_color="#ffffff", width=120, height=36, font=("SF Pro Text", 9, "bold"), border_color=None, **kwargs):
+        super().__init__(parent, width=width, height=height, bg=parent.cget("bg"), highlightthickness=0, **kwargs)
+        self.text = text
+        self.command = command
+        self.bg_color = bg_color
+        self.active_color = active_color
+        self.fg_color = fg_color
+        self.border_color = border_color
+        self.font = font
+        self.width = width
+        self.height = height
+        
+        self.btn_state = "normal"
+        self.state = "normal"
+        self.bg_color_current = self.bg_color
+        self.fg_color_current = self.fg_color
+        
+        self.draw_button()
+        
+        self.bind("<ButtonPress-1>", self.on_press)
+        self.bind("<ButtonRelease-1>", self.on_release)
+        self.bind("<Enter>", self.on_enter)
+        self.bind("<Leave>", self.on_leave)
+        
+    def draw_button(self):
+        self.delete("all")
+        w = self.width
+        h = self.height
+        r = h  # Corner radius matches height for pill shape
+        
+        fill_color = self.active_color if (self.state == "active" and self.btn_state != "disabled") else self.bg_color_current
+        
+        self.create_oval(0, 0, r, h, fill=fill_color, outline="")
+        self.create_oval(w - r, 0, w, h, fill=fill_color, outline="")
+        self.create_rectangle(r // 2, 0, w - r // 2, h, fill=fill_color, outline="")
+        
+        if self.border_color and self.btn_state != "disabled":
+            self.create_arc(0, 0, r, h, start=90, extent=180, outline=self.border_color, style="arc", width=1.5)
+            self.create_arc(w - r, 0, w, h, start=270, extent=180, outline=self.border_color, style="arc", width=1.5)
+            self.create_line(r // 2, 0, w - r // 2, 0, fill=self.border_color, width=1.5)
+            self.create_line(r // 2, h - 1, w - r // 2, h - 1, fill=self.border_color, width=1.5)
+            
+        self.create_text(w // 2, h // 2, text=self.text, fill=self.fg_color_current, font=self.font)
+
+    def on_press(self, event):
+        if self.btn_state == "disabled":
+            return
+        self.state = "active"
+        self.draw_button()
+        
+    def on_release(self, event):
+        if self.btn_state == "disabled":
+            return
+        self.state = "normal"
+        self.draw_button()
+        if 0 <= event.x <= self.width and 0 <= event.y <= self.height:
+            if self.command:
+                self.command()
+                
+    def on_enter(self, event):
+        if self.btn_state == "disabled":
+            return
+        self.state = "active"
+        self.draw_button()
+        
+    def on_leave(self, event):
+        if self.btn_state == "disabled":
+            return
+        self.state = "normal"
+        self.draw_button()
+
+    def config(self, **kwargs):
+        """Overrides config to stay compatible with Tkinter button config calls."""
+        if "state" in kwargs:
+            self.set_state(kwargs["state"])
+        if "text" in kwargs:
+            self.text = kwargs["text"]
+            self.draw_button()
+        super().config(**{k: v for k, v in kwargs.items() if k not in ["state", "text"]})
+
+    def configure(self, **kwargs):
+        self.config(**kwargs)
+
+    def set_state(self, state):
+        self.btn_state = state
+        if state == "disabled":
+            self.bg_color_current = "#1C1C24"
+            self.fg_color_current = "#6b6b6b"
+        else:
+            self.bg_color_current = self.bg_color
+            self.fg_color_current = self.fg_color
+        self.draw_button()
 
 def log(msg):
-    # Print to stdout
     print(f"[Tray-Agent] {msg}", flush=True)
-    # Stream to UI Console if active
     global active_ui_instance
     if active_ui_instance:
         try:
             active_ui_instance.root.after(0, lambda: active_ui_instance.append_log(msg))
         except Exception:
             pass
-
-def create_icon_image():
-    """Generates a premium PlayStation Blue circular tray icon in-memory."""
-    img = Image.new('RGBA', (64, 64), color=(0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    # PlayStation Blue outer ring
-    d.ellipse((6, 6, 58, 58), fill=(0, 112, 209), outline=(255, 255, 255), width=3)
-    # Stylized inner "A" (Agent symbol)
-    d.line([(32, 16), (20, 48)], fill=(255, 255, 255), width=4)
-    d.line([(32, 16), (44, 48)], fill=(255, 255, 255), width=4)
-    d.line([(24, 38), (40, 38)], fill=(255, 255, 255), width=3)
-    return img
 
 def compare_images(img1, img2):
     """Compares two PIL images and returns similarity ratio (0.0 to 1.0)."""
@@ -95,8 +179,8 @@ def compare_images(img1, img2):
     similarity = 1.0 - (diffs / max_diff)
     return similarity
 
-def find_template_on_screen(screen_pil, template_path, threshold=0.85):
-    """Performs template matching using OpenCV. Returns (x, y) center and max confidence value."""
+def find_template_multi_scale(screen_pil, template_path, threshold=0.85):
+    """Searches for a template at multiple scales to accommodate window resizing. Returns (x, y) center and max confidence."""
     try:
         screen_np = np.array(screen_pil)
         screen_bgr = cv2.cvtColor(screen_np, cv2.COLOR_RGB2BGR)
@@ -105,17 +189,37 @@ def find_template_on_screen(screen_pil, template_path, threshold=0.85):
         if template is None:
             return None
             
-        h, w = template.shape[:2]
+        t_h, t_w = template.shape[:2]
+        s_h, s_w = screen_bgr.shape[:2]
         
-        res = cv2.matchTemplate(screen_bgr, template, cv2.TM_CCOEFF_NORMED)
-        _, max_val, _, max_loc = cv2.minMaxLoc(res)
+        best_val = 0.0
+        best_loc = None
+        best_w, best_h = t_w, t_h
         
-        if max_val >= threshold:
-            center_x = max_loc[0] + w // 2
-            center_y = max_loc[1] + h // 2
-            return (center_x, center_y), max_val
+        # Scan scales from 0.6 to 1.4 in steps of 0.1
+        for scale in [0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4]:
+            sw = int(t_w * scale)
+            sh = int(t_h * scale)
+            
+            if sw > s_w or sh > s_h or sw < 5 or sh < 5:
+                continue
+                
+            scaled_template = cv2.resize(template, (sw, sh), interpolation=cv2.INTER_AREA)
+            res = cv2.matchTemplate(screen_bgr, scaled_template, cv2.TM_CCOEFF_NORMED)
+            _, max_val, _, max_loc = cv2.minMaxLoc(res)
+            
+            if max_val > best_val:
+                best_val = max_val
+                best_loc = max_loc
+                best_w = sw
+                best_h = sh
+                
+        if best_val >= threshold:
+            center_x = best_loc[0] + best_w // 2
+            center_y = best_loc[1] + best_h // 2
+            return (center_x, center_y), best_val
     except Exception as e:
-        log(f"OpenCV template search error: {e}")
+        log(f"Multi-scale OpenCV template search error: {e}")
     return None
 
 def scan_visible_windows():
@@ -153,7 +257,7 @@ def capture_window(hwnd):
     height = rect.bottom - rect.top
     
     if width <= 0 or height <= 0:
-        return pyautogui.screenshot()
+        return None
         
     hwndDC = ctypes.windll.user32.GetDC(hwnd)
     mfcDC = ctypes.windll.gdi32.CreateCompatibleDC(hwndDC)
@@ -191,16 +295,67 @@ def send_background_click(hwnd, x, y):
 def autonomous_loop():
     """Background worker thread executing real template matching loops."""
     global loop_active, running, active_brain, last_click_coord, mock_stuck_simulation
-    global background_mode, target_hwnd, target_window_title
+    global background_mode, target_hwnd, target_window_title, global_tray_icon
     log("Background autonomous worker thread started.")
     
     previous_screenshot = None
+    consecutive_stuck_count = 0
     
     while running:
         if loop_active:
-            # 1. Capture screen
+            # 1. Self-healing minimized window restoration
+            current_screenshot = None
             if background_mode and target_hwnd and ctypes.windll.user32.IsWindow(target_hwnd):
+                if ctypes.windll.user32.IsIconic(target_hwnd):
+                    log(f"Target window is minimized. Restoring silently in background...")
+                    ctypes.windll.user32.ShowWindow(target_hwnd, SW_SHOWNOACTIVATE)
+                    time.sleep(0.5)
+                
                 current_screenshot = capture_window(target_hwnd)
+                
+                is_failed = False
+                if current_screenshot is None:
+                    is_failed = True
+                else:
+                    img_np = np.array(current_screenshot)
+                    if img_np.size > 0 and np.std(img_np) < 1.0:
+                        is_failed = True
+                        log("⚠️ [Blank Frame Detected] GDI capture returned solid/black. Attempting self-healing fallback...")
+
+                if is_failed:
+                    # Self-healing: try temporary foreground mapping
+                    log("Attempting self-healing: bringing target window to foreground and capturing via ClientToScreen...")
+                    ctypes.windll.user32.ShowWindow(target_hwnd, 9)  # SW_RESTORE
+                    ctypes.windll.user32.SetForegroundWindow(target_hwnd)
+                    time.sleep(0.4)
+                    
+                    rect = ctypes.wintypes.RECT()
+                    ctypes.windll.user32.GetClientRect(target_hwnd, ctypes.byref(rect))
+                    
+                    pt_topleft = ctypes.wintypes.POINT(rect.left, rect.top)
+                    ctypes.windll.user32.ClientToScreen(target_hwnd, ctypes.byref(pt_topleft))
+                    pt_bottomright = ctypes.wintypes.POINT(rect.right, rect.bottom)
+                    ctypes.windll.user32.ClientToScreen(target_hwnd, ctypes.byref(pt_bottomright))
+                    
+                    scr_w = pt_bottomright.x - pt_topleft.x
+                    scr_h = pt_bottomright.y - pt_topleft.y
+                    
+                    if scr_w > 0 and scr_h > 0:
+                        try:
+                            current_screenshot = pyautogui.screenshot(region=(pt_topleft.x, pt_topleft.y, scr_w, scr_h))
+                            log("✅ Self-healing capture succeeded!")
+                        except Exception as e:
+                            log(f"❌ Screen region capture failed: {e}")
+                            current_screenshot = None
+                    else:
+                        log("❌ Invalid client coordinates on mapped screen.")
+                        current_screenshot = None
+                        
+                if current_screenshot is None:
+                    log("❌ [Autopilot Blocked] Window screenshot failed. Skipping this cycle.")
+                    time.sleep(3.0)
+                    continue
+                
                 target_desc = f"Window '{target_window_title}'"
             else:
                 current_screenshot = pyautogui.screenshot()
@@ -212,7 +367,20 @@ def autonomous_loop():
                 log(f"Screen state similarity check: {sim:.2%} on {target_desc}")
                 
                 if sim > 0.995:
-                    log("⚠️ [Stuck Detected] Visual verification failed! Auto-capturing struggle zone...")
+                    consecutive_stuck_count += 1
+                    log(f"⚠️ [Stuck Detected] Visual verification failed! Consecutive stuck count: {consecutive_stuck_count}/5")
+                    
+                    if consecutive_stuck_count >= 5:
+                        log("🚨 [Runaway Protection Active] Stuck count reached limit! Suspending autonomous loop to prevent infinite click loop.")
+                        loop_active = False
+                        consecutive_stuck_count = 0
+                        try:
+                            if global_tray_icon:
+                                global_tray_icon.icon = create_icon_image()
+                        except Exception:
+                            pass
+                        continue
+                    
                     cx, cy = last_click_coord
                     sw, sh = current_screenshot.size
                     
@@ -233,6 +401,8 @@ def autonomous_loop():
                             trigger_ui_refresh()
                         except Exception as e:
                             log(f"Failed to auto-save struggle crop: {e}")
+                else:
+                    consecutive_stuck_count = 0
             
             previous_screenshot = current_screenshot
             
@@ -264,7 +434,8 @@ def autonomous_loop():
                 
                 thresh = thresholds.get(t_name, 0.85)
                 
-                match_result = find_template_on_screen(current_screenshot, t_path, thresh)
+                # Multi-scale robust template matching
+                match_result = find_template_multi_scale(current_screenshot, t_path, thresh)
                 if match_result:
                     coord, val = match_result
                     last_click_coord = coord
@@ -285,6 +456,7 @@ def autonomous_loop():
             time.sleep(4.0)
         else:
             previous_screenshot = None
+            consecutive_stuck_count = 0
             time.sleep(1.0)
 
 # --- Snipping Tool Overlay ---
@@ -354,7 +526,8 @@ class MemoryManagerUI:
         
         self.root.title("Visual Memory Manager & Telemetry Console")
         self.root.geometry("620x680")
-        self.root.configure(bg="#121216")
+        # PlayStation colors: Canvas Dark (#000000)
+        self.root.configure(bg="#000000")
         self.root.resizable(False, False)
         self.root.attributes("-alpha", 0.98)
         
@@ -368,31 +541,32 @@ class MemoryManagerUI:
         
     def build_widgets(self):
         # Header Badge
-        header_frame = tk.Frame(self.root, bg="#121216")
+        header_frame = tk.Frame(self.root, bg="#000000")
         header_frame.pack(fill="x", padx=20, pady=(15, 5))
         
-        title_label = tk.Label(header_frame, text="VISUAL MEMORIES", font=("SF Pro Text", 14, "bold"), fg="#FFFFFF", bg="#121216")
+        title_label = tk.Label(header_frame, text="VISUAL MEMORIES", font=("SF Pro Text", 14, "bold"), fg="#FFFFFF", bg="#000000")
         title_label.pack(side="left")
         
-        subtitle_label = tk.Label(header_frame, text="TELEMETRY GRIND CONSOLE", font=("SF Pro Text", 8, "bold"), fg="#A259FF", bg="#121216")
+        subtitle_label = tk.Label(header_frame, text="TELEMETRY GRIND CONSOLE", font=("SF Pro Text", 8, "bold"), fg="#0070d1", bg="#000000")
         subtitle_label.pack(side="left", padx=10, pady=5)
 
-        # Main Workspace Panel: Split into Left and Right Columns
-        middle_paned = tk.Frame(self.root, bg="#121216")
+        # Main Workspace Panel: Split into Left and Right Columns (Surface Dark Elevated #121314)
+        middle_paned = tk.Frame(self.root, bg="#121314", bd=1, relief="flat", highlightbackground="#2C2C3A", highlightthickness=1)
         middle_paned.pack(fill="both", expand=True, padx=20, pady=10)
         
         # Left Column: Templates list and management buttons
-        left_col = tk.Frame(middle_paned, bg="#121216")
-        left_col.pack(side="left", fill="both", expand=True, padx=(0, 10))
+        left_col = tk.Frame(middle_paned, bg="#121314")
+        left_col.pack(side="left", fill="both", expand=True, padx=(15, 10), pady=15)
         
-        list_lbl = tk.Label(left_col, text="OpenCV Templates", font=("SF Pro Text", 9, "bold"), fg="#8A8A9E", bg="#121216")
+        list_lbl = tk.Label(left_col, text="OpenCV Templates", font=("SF Pro Text", 9, "bold"), fg="#cccccc", bg="#121314")
         list_lbl.pack(anchor="w", pady=(0, 5))
         
-        list_frame = tk.Frame(left_col, bg="#1C1C24", bd=1, relief="flat", highlightbackground="#2C2C3A", highlightthickness=1)
+        # Surface Dark Card (#181818)
+        list_frame = tk.Frame(left_col, bg="#181818", bd=1, relief="flat", highlightbackground="#2C2C3A", highlightthickness=1)
         list_frame.pack(fill="both", expand=True)
         
         self.listbox = tk.Listbox(
-            list_frame, bg="#0D0D11", fg="#E2E8F0", selectbackground="#A259FF",
+            list_frame, bg="#0D0D11", fg="#E2E8F0", selectbackground="#0070d1",
             selectforeground="#FFFFFF", font=("Consolas", 9), bd=0, highlightthickness=0, activestyle="none"
         )
         self.listbox.pack(side="left", fill="both", expand=True, padx=5, pady=5)
@@ -402,65 +576,67 @@ class MemoryManagerUI:
         scrollbar.pack(side="right", fill="y", padx=(0, 5), pady=5)
         self.listbox.config(yscrollcommand=scrollbar.set)
         
-        # Template management buttons
-        tpl_btn_frame = tk.Frame(left_col, bg="#121216")
-        tpl_btn_frame.pack(fill="x", pady=10)
+        # Template management buttons (PlayStation Pill buttons)
+        tpl_btn_frame = tk.Frame(left_col, bg="#121314")
+        tpl_btn_frame.pack(fill="x", pady=(10, 0))
         
-        self.add_btn = tk.Button(tpl_btn_frame, text="New Image (Snip)", font=("SF Pro Text", 9, "bold"), bg="#A259FF", fg="#FFFFFF", bd=0, padx=8, pady=4, command=self.start_snipping)
+        # Primary Action (PlayStation Blue #0070d1)
+        self.add_btn = PillButton(tpl_btn_frame, "New Image", self.start_snipping, bg_color="#0070d1", active_color="#0064b7", width=100, height=32)
         self.add_btn.pack(side="left")
         
-        self.del_btn = tk.Button(tpl_btn_frame, text="Delete", font=("SF Pro Text", 9, "bold"), bg="#FF1744", fg="#FFFFFF", bd=0, padx=8, pady=4, command=self.delete_memory)
+        # Commerce/Destructive Action (Store Orange #d53b00)
+        self.del_btn = PillButton(tpl_btn_frame, "Delete", self.delete_memory, bg_color="#d53b00", active_color="#aa2f00", width=80, height=32)
         self.del_btn.pack(side="right")
         
         # Right Column: Image Preview + Active Brain Card
-        right_col = tk.Frame(middle_paned, bg="#121216", width=250)
-        right_col.pack(side="right", fill="both", padx=(10, 0))
+        right_col = tk.Frame(middle_paned, bg="#121314", width=250)
+        right_col.pack(side="right", fill="both", padx=(10, 15), pady=15)
         right_col.pack_propagate(False)
         
         # Thumbnail Preview Canvas
-        prev_lbl = tk.Label(right_col, text="Template Image Preview", font=("SF Pro Text", 9, "bold"), fg="#8A8A9E", bg="#121216")
+        prev_lbl = tk.Label(right_col, text="Template Preview", font=("SF Pro Text", 9, "bold"), fg="#cccccc", bg="#121314")
         prev_lbl.pack(anchor="w", pady=(0, 5))
         
         self.preview_canvas = tk.Canvas(right_col, width=230, height=130, bg="#0D0D11", highlightbackground="#2C2C3A", highlightthickness=1)
         self.preview_canvas.pack(fill="x")
         self.preview_canvas.create_text(115, 65, text="No image selected", fill="#8A8A9E", font=("SF Pro Text", 8))
         
-        # Active Brain configuration details
-        brain_card = tk.LabelFrame(right_col, text="Active Task Brain Configuration", font=("SF Pro Text", 9, "bold"), fg="#A259FF", bg="#121216", bd=1, relief="flat", highlightbackground="#2C2C3A", highlightthickness=1)
+        # Active Brain configuration details (Surface Dark Card #181818)
+        brain_card = tk.LabelFrame(right_col, text="Active Task Brain Profile", font=("SF Pro Text", 9, "bold"), fg="#0070d1", bg="#181818", bd=1, relief="flat", highlightbackground="#2C2C3A", highlightthickness=1)
         brain_card.pack(fill="both", expand=True, pady=(15, 0), ipady=5)
         
-        self.brain_title_lbl = tk.Label(brain_card, text="Brain Name: None", font=("SF Pro Text", 9, "bold"), fg="#E2E8F0", bg="#121216", anchor="w")
+        self.brain_title_lbl = tk.Label(brain_card, text="Brain Name: None", font=("SF Pro Text", 9, "bold"), fg="#E2E8F0", bg="#181818", anchor="w")
         self.brain_title_lbl.pack(fill="x", padx=10, pady=(5, 2))
         
-        self.brain_goal_lbl = tk.Label(brain_card, text="Goal: None", font=("SF Pro Text", 8), fg="#8A8A9E", bg="#121216", anchor="w", justify="left", wrap=210)
+        self.brain_goal_lbl = tk.Label(brain_card, text="Goal: None", font=("SF Pro Text", 8), fg="#cccccc", bg="#181818", anchor="w", justify="left", wrap=210)
         self.brain_goal_lbl.pack(fill="x", padx=10, pady=2)
         
-        self.brain_prompt_lbl = tk.Label(brain_card, text="Prompt: None", font=("SF Pro Text", 8), fg="#8A8A9E", bg="#121216", anchor="w", justify="left", wrap=210)
+        self.brain_prompt_lbl = tk.Label(brain_card, text="Prompt: None", font=("SF Pro Text", 8), fg="#cccccc", bg="#181818", anchor="w", justify="left", wrap=210)
         self.brain_prompt_lbl.pack(fill="both", expand=True, padx=10, pady=2)
 
-        # Background Automation Controls
-        grind_frame = tk.LabelFrame(self.root, text="Background Grinding & PS Remote Play Controller", font=("SF Pro Text", 9, "bold"), fg="#00E5FF", bg="#121216", bd=1, relief="flat", highlightbackground="#2C2C3A", highlightthickness=1)
+        # Background Automation Controls (Surface Dark Elevated #121314)
+        grind_frame = tk.LabelFrame(self.root, text="Background Grinding & Remote Play", font=("SF Pro Text", 9, "bold"), fg="#00E5FF", bg="#121314", bd=1, relief="flat", highlightbackground="#2C2C3A", highlightthickness=1)
         grind_frame.pack(fill="x", padx=20, pady=5, ipady=5)
         
         self.bg_mode_var = tk.BooleanVar(value=background_mode)
-        self.bg_mode_cb = tk.Checkbutton(grind_frame, text="Enable Background Automation (Win32 API)", variable=self.bg_mode_var, font=("SF Pro Text", 9, "bold"), fg="#FFFFFF", bg="#121216", activebackground="#121216", activeforeground="#FFFFFF", selectcolor="#0D0D11", bd=0, command=self.on_bg_toggle)
+        self.bg_mode_cb = tk.Checkbutton(grind_frame, text="Enable Background Automation (Win32)", variable=self.bg_mode_var, font=("SF Pro Text", 9, "bold"), fg="#FFFFFF", bg="#121314", activebackground="#121314", activeforeground="#FFFFFF", selectcolor="#0D0D11", bd=0, command=self.on_bg_toggle)
         self.bg_mode_cb.pack(anchor="w", padx=15, pady=2)
         
-        win_select_frame = tk.Frame(grind_frame, bg="#121216")
+        win_select_frame = tk.Frame(grind_frame, bg="#121314")
         win_select_frame.pack(fill="x", padx=15, pady=2)
         
-        win_lbl = tk.Label(win_select_frame, text="Target Window:", font=("SF Pro Text", 9), fg="#8A8A9E", bg="#121216")
+        win_lbl = tk.Label(win_select_frame, text="Target Window:", font=("SF Pro Text", 9), fg="#8A8A9E", bg="#121314")
         win_lbl.pack(side="left")
         
         self.win_dropdown = ttk.Combobox(win_select_frame, state="readonly", width=52)
         self.win_dropdown.pack(side="left", padx=10)
         self.win_dropdown.bind("<<ComboboxSelected>>", self.on_window_select)
         
-        self.refresh_win_btn = tk.Button(win_select_frame, text="Scan", font=("SF Pro Text", 8, "bold"), bg="#2C2C3A", fg="#E2E8F0", bd=0, padx=8, pady=3, command=self.refresh_windows_list)
+        self.refresh_win_btn = PillButton(win_select_frame, "Scan", self.refresh_windows_list, bg_color="#2C2C3A", active_color="#3D3D4E", width=60, height=26, font=("SF Pro Text", 8, "bold"))
         self.refresh_win_btn.pack(side="left")
 
         # Scrolling Logging Console Window
-        console_frame = tk.LabelFrame(self.root, text="System Console Telemetry Logs", font=("SF Pro Text", 9, "bold"), fg="#FFD54F", bg="#121216", bd=1, relief="flat", highlightbackground="#2C2C3A", highlightthickness=1)
+        console_frame = tk.LabelFrame(self.root, text="System Console Telemetry Logs", font=("SF Pro Text", 9, "bold"), fg="#FFD54F", bg="#121314", bd=1, relief="flat", highlightbackground="#2C2C3A", highlightthickness=1)
         console_frame.pack(fill="x", padx=20, pady=5)
         
         self.console = tk.Text(console_frame, height=8, bg="#0D0D11", fg="#00FF66", font=("Consolas", 8), bd=0, wrap="word")
@@ -472,20 +648,14 @@ class MemoryManagerUI:
         self.console.config(yscrollcommand=con_scroll.set)
         
         # Bottom exit row
-        bottom_frame = tk.Frame(self.root, bg="#121216")
+        bottom_frame = tk.Frame(self.root, bg="#000000")
         bottom_frame.pack(fill="x", padx=20, pady=(5, 15))
         
-        self.close_btn = tk.Button(bottom_frame, text="Close Console", font=("SF Pro Text", 9, "bold"), bg="#2C2C3A", fg="#E2E8F0", bd=0, padx=12, pady=6, command=self.on_close)
+        # Secondary Action: transparent background outline
+        self.close_btn = PillButton(bottom_frame, "Close Console", self.on_close, bg_color="#121314", active_color="#1C1C24", border_color="#2C2C3A", width=120, height=32)
         self.close_btn.pack(side="right")
-        
-        # Styling hover effects
-        self.bind_btn_hover(self.add_btn, "#A259FF", "#B370FF")
-        self.bind_btn_hover(self.del_btn, "#FF1744", "#FF4D6A")
-        self.bind_btn_hover(self.refresh_win_btn, "#2C2C3A", "#3D3D4E")
-        self.bind_btn_hover(self.close_btn, "#2C2C3A", "#3D3D4E")
 
     def append_log(self, msg):
-        """Appends log text directly to the console widget."""
         self.console.config(state="normal")
         self.console.insert(tk.END, f"{msg}\n")
         self.console.see(tk.END)
@@ -503,18 +673,14 @@ class MemoryManagerUI:
         if os.path.exists(filepath):
             try:
                 img = Image.open(filepath)
-                # Resize to fit the canvas (230 x 130)
                 img.thumbnail((220, 120))
-                
                 self.preview_photo = ImageTk.PhotoImage(img)
                 self.preview_canvas.delete("all")
-                # Center the thumbnail in the canvas
                 self.preview_canvas.create_image(115, 65, image=self.preview_photo)
             except Exception as e:
                 log(f"Failed to display thumbnail: {e}")
 
     def refresh_brain_profile(self):
-        """Loads active brain config config and updates UI labels."""
         brain_file = os.path.join(BRAINS_DIR, f"{active_brain}.json")
         name = active_brain
         goal = "No goal set."
@@ -568,7 +734,7 @@ class MemoryManagerUI:
                     target_hwnd = hwnd
                     target_window_title = title
                     found = True
-                    log(f"Auto-selected game/remote play window: '{title}'")
+                    log(f"Auto-selected window: '{title}'")
                     break
                     
         if not found and titles:
@@ -636,10 +802,11 @@ class MemoryManagerUI:
         btn_box = tk.Frame(dialog, bg="#121216")
         btn_box.pack(fill="x", padx=20, pady=10)
         
-        save_btn = tk.Button(btn_box, text="Save", font=("SF Pro Text", 9, "bold"), bg="#A259FF", fg="#FFFFFF", bd=0, padx=10, pady=4, command=save_and_close)
+        # Save button as PillButton inside dialog
+        save_btn = PillButton(btn_box, "Save", save_and_close, bg_color="#0070d1", active_color="#0064b7", width=80, height=28)
         save_btn.pack(side="right")
         
-        cancel_btn = tk.Button(btn_box, text="Cancel", font=("SF Pro Text", 9, "bold"), bg="#2C2C3A", fg="#E2E8F0", bd=0, padx=10, pady=4, command=cancel)
+        cancel_btn = PillButton(btn_box, "Cancel", cancel, bg_color="#2C2C3A", active_color="#3D3D4E", width=80, height=28)
         cancel_btn.pack(side="right", padx=10)
         
         dialog.wait_window()
@@ -693,6 +860,11 @@ def toggle_loop(icon, item):
     if loop_active:
         mock_stuck_simulation = False
     log(f"Autonomous Loop master switch toggled to: {loop_active}")
+    # Dynamic tray icon visual update
+    try:
+        icon.icon = create_icon_image()
+    except Exception as e:
+        log(f"Failed to update tray icon: {e}")
 
 def set_brain(icon, item):
     global active_brain
@@ -725,6 +897,32 @@ def get_brain_menu():
         ))
     return menu_items
 
+def trigger_ui_refresh():
+    global active_ui_instance
+    if active_ui_instance:
+        try:
+            active_ui_instance.root.after(0, active_ui_instance.refresh_list)
+        except Exception:
+            pass
+
+def create_icon_image():
+    """Generates a premium PlayStation-themed resident agent task tray icon."""
+    # 64x64 transparent canvas
+    image = Image.new("RGBA", (64, 64), color=(0, 0, 0, 0))
+    dc = ImageDraw.Draw(image)
+    
+    # Choose core color based on loop activity
+    global loop_active
+    status_color = (0, 230, 118, 255) if loop_active else (255, 213, 79, 255) # Green if active, Yellow/amber if idle
+    
+    # PlayStation Dark Surface (#121314) rounded base
+    dc.rounded_rectangle([2, 2, 62, 62], radius=16, fill=(18, 19, 20, 255), outline=(44, 44, 58, 255), width=2)
+    # Stylized PlayStation Blue (#0070d1) inner ring
+    dc.ellipse([14, 14, 50, 50], fill=None, outline=(0, 112, 209, 255), width=4)
+    # A glowing status core dot for "Agent Status"
+    dc.ellipse([25, 25, 39, 39], fill=status_color)
+    return image
+
 def clean_exit(icon):
     global running
     log("Exiting application cleanly...")
@@ -733,6 +931,7 @@ def clean_exit(icon):
     sys.exit(0)
 
 def main():
+    global global_tray_icon
     # Start background loop thread
     threading.Thread(target=autonomous_loop, daemon=True).start()
     
@@ -747,6 +946,7 @@ def main():
     )
     
     icon = pystray.Icon("TrayOSAgent", icon_image, "OS Autonomous Agent", menu=tray_menu)
+    global_tray_icon = icon
     log("Starting task tray application loop (pystray.Icon.run)...")
     icon.run()
 

@@ -2,10 +2,10 @@
 """
 DESIGN PLUGIN - Premium Meta-Prompt & Telemetry Dashboard
 A native Tkinter GUI overlay featuring:
-1. Glassmorphic premium dark theme UI (Apple/Google style)
-2. Meta-Prompt AI Planner (interfaces with local gemma2:2b)
-3. Calibration Telemetry (real-time rolling stats parser & radar coordinate target plot)
-4. Automated action dispatcher (writes directly to puppet_hints.json)
+1. PlayStation Design alignment (Canvas Dark, Pill buttons, SST-like typography).
+2. Meta-Prompt AI Planner (interfaces with local gemma2:2b).
+3. Calibration Telemetry (real-time rolling stats parser & radar coordinate target plot).
+4. Automated action dispatcher (writes directly to puppet_hints.json).
 5. Auto-Goal Discovery Engine: Reads STS2 save file telemetry, auto-formulates strategic objectives.
 6. Game Status Telemetry Panel: Live HP progress bar, floor, gold, and room type tracking.
 """
@@ -38,15 +38,111 @@ SPIRE_CALIBRATION = os.path.join(SPIRE_SAVES_DIR, "click_calibration_data.json")
 HARNESS_CALIBRATION = os.path.join(BASE_DIR, "click_calibration_data.json")
 SYSTEM_STATUS = os.path.join(GENRE_DIR, "AI", "brain_status.json")
 
+# --- Custom PlayStation Pill Button Widget ---
+class PillButton(tk.Canvas):
+    def __init__(self, parent, text, command, bg_color="#0070d1", active_color="#0064b7", fg_color="#ffffff", width=120, height=36, font=("SF Pro Text", 9, "bold"), border_color=None, **kwargs):
+        super().__init__(parent, width=width, height=height, bg=parent.cget("bg"), highlightthickness=0, **kwargs)
+        self.text = text
+        self.command = command
+        self.bg_color = bg_color
+        self.active_color = active_color
+        self.fg_color = fg_color
+        self.border_color = border_color
+        self.font = font
+        self.width = width
+        self.height = height
+        
+        self.btn_state = "normal"
+        self.state = "normal"
+        self.bg_color_current = self.bg_color
+        self.fg_color_current = self.fg_color
+        
+        self.draw_button()
+        
+        self.bind("<ButtonPress-1>", self.on_press)
+        self.bind("<ButtonRelease-1>", self.on_release)
+        self.bind("<Enter>", self.on_enter)
+        self.bind("<Leave>", self.on_leave)
+        
+    def draw_button(self):
+        self.delete("all")
+        w = self.width
+        h = self.height
+        r = h  # Corner radius matches height for pill shape
+        
+        fill_color = self.active_color if (self.state == "active" and self.btn_state != "disabled") else self.bg_color_current
+        
+        self.create_oval(0, 0, r, h, fill=fill_color, outline="")
+        self.create_oval(w - r, 0, w, h, fill=fill_color, outline="")
+        self.create_rectangle(r // 2, 0, w - r // 2, h, fill=fill_color, outline="")
+        
+        if self.border_color and self.btn_state != "disabled":
+            self.create_arc(0, 0, r, h, start=90, extent=180, outline=self.border_color, style="arc", width=1.5)
+            self.create_arc(w - r, 0, w, h, start=270, extent=180, outline=self.border_color, style="arc", width=1.5)
+            self.create_line(r // 2, 0, w - r // 2, 0, fill=self.border_color, width=1.5)
+            self.create_line(r // 2, h - 1, w - r // 2, h - 1, fill=self.border_color, width=1.5)
+            
+        self.create_text(w // 2, h // 2, text=self.text, fill=self.fg_color_current, font=self.font)
+
+    def on_press(self, event):
+        if self.btn_state == "disabled":
+            return
+        self.state = "active"
+        self.draw_button()
+        
+    def on_release(self, event):
+        if self.btn_state == "disabled":
+            return
+        self.state = "normal"
+        self.draw_button()
+        if 0 <= event.x <= self.width and 0 <= event.y <= self.height:
+            if self.command:
+                self.command()
+                
+    def on_enter(self, event):
+        if self.btn_state == "disabled":
+            return
+        self.state = "active"
+        self.draw_button()
+        
+    def on_leave(self, event):
+        if self.btn_state == "disabled":
+            return
+        self.state = "normal"
+        self.draw_button()
+
+    def config(self, **kwargs):
+        """Overrides config to stay compatible with Tkinter button config calls."""
+        if "state" in kwargs:
+            self.set_state(kwargs["state"])
+        if "text" in kwargs:
+            self.text = kwargs["text"]
+            self.draw_button()
+        super().config(**{k: v for k, v in kwargs.items() if k not in ["state", "text"]})
+
+    def configure(self, **kwargs):
+        self.config(**kwargs)
+
+    def set_state(self, state):
+        self.btn_state = state
+        if state == "disabled":
+            self.bg_color_current = "#1C1C24"
+            self.fg_color_current = "#6b6b6b"
+        else:
+            self.bg_color_current = self.bg_color
+            self.fg_color_current = self.fg_color
+        self.draw_button()
+
+# --- Main Dashboard ---
 class DesignPluginDashboard:
     def __init__(self, root):
         self.root = root
         self.root.title("Design Plugin - Cognitive Dashboard")
         self.root.geometry("680x600")
-        self.root.configure(bg="#0D0D11")
+        # PlayStation Canvas Dark (#000000)
+        self.root.configure(bg="#000000")
         self.root.resizable(False, False)
         
-        # Window opacity
         self.root.attributes("-alpha", 0.98)
         
         self.ollama_url = "http://localhost:11434"
@@ -79,11 +175,12 @@ class DesignPluginDashboard:
         
         self.build_ui()
         self.start_monitoring()
+        self.monitor_ollama_status()
         self.animate_status_dot()
-
+ 
     def build_ui(self):
         # Header Badge
-        header_frame = tk.Frame(self.root, bg="#0D0D11")
+        header_frame = tk.Frame(self.root, bg="#000000")
         header_frame.pack(fill="x", padx=20, pady=(15, 10))
         
         title_label = tk.Label(
@@ -91,7 +188,7 @@ class DesignPluginDashboard:
             text="DESIGN PLUGIN", 
             font=("SF Pro Text", 16, "bold"), 
             fg="#FFFFFF", 
-            bg="#0D0D11"
+            bg="#000000"
         )
         title_label.pack(side="left")
         
@@ -99,32 +196,40 @@ class DesignPluginDashboard:
             header_frame, 
             text="COGNITIVE META-PROMPT ENGINE", 
             font=("SF Pro Text", 9, "bold"), 
-            fg="#A259FF", 
-            bg="#0D0D11"
+            fg="#0070d1", 
+            bg="#000000"
         )
         subtitle_label.pack(side="left", padx=10, pady=5)
 
-        self.status_dot = tk.Canvas(header_frame, width=12, height=12, bg="#0D0D11", highlightthickness=0)
+        self.ollama_status_var = tk.StringVar(value="Ollama: Offline")
+        self.ollama_status_lbl = tk.Label(
+            header_frame,
+            textvariable=self.ollama_status_var,
+            font=("SF Pro Text", 8, "bold"),
+            fg="#FF1744",
+            bg="#000000"
+        )
+        self.ollama_status_lbl.pack(side="left", padx=15, pady=5)
+
+        self.status_dot = tk.Canvas(header_frame, width=12, height=12, bg="#000000", highlightthickness=0)
         self.status_dot.pack(side="right", pady=5)
-        self.draw_status_dot("#2979FF") # Blue = Ready
+        self.draw_status_dot("#2979FF")
 
         # Main Layout: Left Panel (Meta-Prompt AI), Right Panel (Telemetry & Radar)
-        main_paned = tk.Frame(self.root, bg="#0D0D11")
+        main_paned = tk.Frame(self.root, bg="#000000")
         main_paned.pack(fill="both", expand=True, padx=20, pady=10)
         
-        # Left Panel (Width 380)
-        left_panel = tk.Frame(main_paned, bg="#121216", bd=1, relief="flat", highlightbackground="#2C2C3A", highlightthickness=1)
+        # Left Panel (Surface Dark Elevated #121314)
+        left_panel = tk.Frame(main_paned, bg="#121314", bd=1, relief="flat", highlightbackground="#2C2C3A", highlightthickness=1)
         left_panel.pack(side="left", fill="both", expand=True, padx=(0, 10))
         
-        # Form Header
-        tf_lbl = tk.Label(left_panel, text="Meta-Prompt Planner Agent", font=("SF Pro Text", 10, "bold"), fg="#8A8A9E", bg="#121216")
+        tf_lbl = tk.Label(left_panel, text="Meta-Prompt Planner Agent", font=("SF Pro Text", 10, "bold"), fg="#8A8A9E", bg="#121314")
         tf_lbl.pack(anchor="w", padx=15, pady=10)
         
-        # Goal Configurator controls
-        goal_control_frame = tk.Frame(left_panel, bg="#121216")
+        goal_control_frame = tk.Frame(left_panel, bg="#121314")
         goal_control_frame.pack(fill="x", padx=15, pady=(5, 2))
         
-        goal_lbl = tk.Label(goal_control_frame, text="Target Objective", font=("SF Pro Text", 9), fg="#A259FF", bg="#121216")
+        goal_lbl = tk.Label(goal_control_frame, text="Target Objective", font=("SF Pro Text", 9), fg="#00E5FF", bg="#121314")
         goal_lbl.pack(side="left")
         
         self.auto_discover_var = tk.BooleanVar(value=True)
@@ -133,49 +238,44 @@ class DesignPluginDashboard:
             text="Auto-Discover Goal (AI)",
             variable=self.auto_discover_var,
             font=("SF Pro Text", 8, "bold"),
-            fg="#00E5FF",
-            bg="#121216",
-            activebackground="#121216",
-            activeforeground="#00E5FF",
+            fg="#A259FF",
+            bg="#121314",
+            activebackground="#121314",
+            activeforeground="#A259FF",
             selectcolor="#0D0D11",
             bd=0,
             highlightthickness=0
         )
         self.auto_discover_cb.pack(side="right")
         
-        # Goal Entry
+        # Goal Entry (Surface Dark Card #181818)
         self.goal_entry = tk.Entry(
             left_panel, 
-            bg="#1C1C24", 
+            bg="#181818", 
             fg="#FFFFFF", 
             insertbackground="#FFFFFF",
             font=("SF Pro Text", 10), 
             bd=0, 
             highlightthickness=1, 
             highlightbackground="#2C2C3A", 
-            highlightcolor="#A259FF"
+            highlightcolor="#0070d1"
         )
         self.goal_entry.pack(fill="x", padx=15, pady=(0, 10))
         self.goal_entry.insert(0, "Slay the Spire 2: Choose Rest at campfire to recover HP")
         
-        # Plan Button
-        self.plan_btn = tk.Button(
+        # Plan Button (PlayStation Pill button)
+        self.plan_btn = PillButton(
             left_panel, 
             text="Generate Action Plan (AI)", 
-            font=("SF Pro Text", 9, "bold"), 
-            bg="#A259FF", 
-            fg="#FFFFFF", 
-            activebackground="#8E44AD", 
-            activeforeground="#FFFFFF",
-            bd=0, 
-            padx=10, 
-            pady=5, 
-            command=self.trigger_planning
+            command=self.trigger_planning,
+            bg_color="#0070d1",
+            active_color="#0064b7",
+            width=200,
+            height=32
         )
         self.plan_btn.pack(anchor="w", padx=15, pady=5)
         
-        # Thought process log
-        thought_lbl = tk.Label(left_panel, text="AI Strategic Thoughts & Decision Plan", font=("SF Pro Text", 9), fg="#8A8A9E", bg="#121216")
+        thought_lbl = tk.Label(left_panel, text="AI Strategic Thoughts & Decision Plan", font=("SF Pro Text", 9), fg="#8A8A9E", bg="#121314")
         thought_lbl.pack(anchor="w", padx=15, pady=(10, 2))
         
         self.thought_text = tk.Text(
@@ -194,130 +294,106 @@ class DesignPluginDashboard:
         self.thought_text.config(state="disabled")
 
         # Action Command Bar
-        action_bar = tk.Frame(left_panel, bg="#121216")
+        action_bar = tk.Frame(left_panel, bg="#121314")
         action_bar.pack(fill="x", padx=15, pady=(0, 15))
         
-        self.dispatch_btn = tk.Button(
+        self.dispatch_btn = PillButton(
             action_bar, 
-            text="Dispatch Command to Game", 
-            font=("SF Pro Text", 9, "bold"), 
-            bg="#00E676", 
-            fg="#121216", 
-            activebackground="#00B0FF", 
-            activeforeground="#FFFFFF",
-            bd=0, 
-            padx=10, 
-            pady=5, 
+            text="Dispatch Command", 
             command=self.dispatch_action,
-            state="disabled"
+            bg_color="#d53b00", # Commerce Orange
+            active_color="#aa2f00",
+            width=140,
+            height=32
         )
         self.dispatch_btn.pack(side="left")
+        self.dispatch_btn.config(state="disabled")
         
         self.planned_action_var = tk.StringVar(value="None")
-        self.planned_action_lbl = tk.Label(action_bar, textvariable=self.planned_action_var, font=("SF Pro Text", 9, "bold"), fg="#E2E8F0", bg="#121216")
+        self.planned_action_lbl = tk.Label(action_bar, textvariable=self.planned_action_var, font=("SF Pro Text", 9, "bold"), fg="#E2E8F0", bg="#121314")
         self.planned_action_lbl.pack(side="right", padx=10)
 
         # AGI Autonomous Player Bar
-        agi_bar = tk.Frame(left_panel, bg="#121216")
+        agi_bar = tk.Frame(left_panel, bg="#121314")
         agi_bar.pack(fill="x", padx=15, pady=(0, 15))
         
-        self.start_player_btn = tk.Button(
+        self.start_player_btn = PillButton(
             agi_bar, 
-            text="Start Autonomous Player", 
-            font=("SF Pro Text", 9, "bold"), 
-            bg="#A259FF", 
-            fg="#FFFFFF", 
-            activebackground="#8E44AD", 
-            activeforeground="#FFFFFF",
-            bd=0, 
-            padx=10, 
-            pady=5, 
-            command=self.start_autonomous_player
+            text="Start Autopilot", 
+            command=self.start_autonomous_player,
+            bg_color="#0070d1",
+            active_color="#0064b7",
+            width=120,
+            height=32
         )
         self.start_player_btn.pack(side="left")
         
-        self.stop_player_btn = tk.Button(
+        self.stop_player_btn = PillButton(
             agi_bar, 
-            text="Stop Player", 
-            font=("SF Pro Text", 9, "bold"), 
-            bg="#FF1744", 
-            fg="#FFFFFF", 
-            activebackground="#D50000", 
-            activeforeground="#FFFFFF",
-            bd=0, 
-            padx=10, 
-            pady=5, 
+            text="Stop Autopilot", 
             command=self.stop_autonomous_player,
-            state="disabled"
+            bg_color="#d53b00", # Store Orange for stop action
+            active_color="#aa2f00",
+            width=120,
+            height=32
         )
         self.stop_player_btn.pack(side="left", padx=10)
+        self.stop_player_btn.config(state="disabled")
 
-        # Right Panel (Width 240)
-        right_panel = tk.Frame(main_paned, bg="#121216", bd=1, relief="flat", highlightbackground="#2C2C3A", highlightthickness=1)
+        # Right Panel (Surface Dark Elevated #121314)
+        right_panel = tk.Frame(main_paned, bg="#121314", bd=1, relief="flat", highlightbackground="#2C2C3A", highlightthickness=1)
         right_panel.pack(side="right", fill="both")
         
-        # Calibration Title
-        cal_lbl = tk.Label(right_panel, text="Calibration Telemetry", font=("SF Pro Text", 10, "bold"), fg="#8A8A9E", bg="#121216")
+        cal_lbl = tk.Label(right_panel, text="Calibration Telemetry", font=("SF Pro Text", 10, "bold"), fg="#8A8A9E", bg="#121314")
         cal_lbl.pack(anchor="w", padx=15, pady=10)
         
-        # Target radar chart canvas
-        self.radar = tk.Canvas(right_panel, width=160, height=160, bg="#0D0D11", highlightthickness=1, highlightbackground="#2C2C3A")
+        # Target radar chart canvas (Surface Dark Card #181818)
+        self.radar = tk.Canvas(right_panel, width=160, height=160, bg="#181818", highlightthickness=1, highlightbackground="#2C2C3A")
         self.radar.pack(padx=20, pady=5)
         self.draw_radar_grid()
         
-        # Telemetry fields
         self.offset_var = tk.StringVar(value="Offset: dx=0.0px, dy=0.0px")
         self.std_var = tk.StringVar(value="Variance: sx=0.0px, sy=0.0px")
         self.trend_var = tk.StringVar(value="Trend: Calibrating...")
         
-        lbl_offset = tk.Label(right_panel, textvariable=self.offset_var, font=("SF Pro Text", 9), fg="#E2E8F0", bg="#121216", anchor="w")
+        lbl_offset = tk.Label(right_panel, textvariable=self.offset_var, font=("SF Pro Text", 9), fg="#E2E8F0", bg="#121314", anchor="w")
         lbl_offset.pack(fill="x", padx=15, pady=(8, 2))
         
-        lbl_std = tk.Label(right_panel, textvariable=self.std_var, font=("SF Pro Text", 9), fg="#8A8A9E", bg="#121216", anchor="w")
+        lbl_std = tk.Label(right_panel, textvariable=self.std_var, font=("SF Pro Text", 9), fg="#8A8A9E", bg="#121314", anchor="w")
         lbl_std.pack(fill="x", padx=15, pady=2)
         
-        lbl_trend = tk.Label(right_panel, textvariable=self.trend_var, font=("SF Pro Text", 9, "bold"), fg="#FFC107", bg="#121216", anchor="w")
+        lbl_trend = tk.Label(right_panel, textvariable=self.trend_var, font=("SF Pro Text", 9, "bold"), fg="#FFC107", bg="#121314", anchor="w")
         lbl_trend.pack(fill="x", padx=15, pady=2)
         
-        # Separator line
         sep = tk.Frame(right_panel, height=1, bg="#2C2C3A")
         sep.pack(fill="x", padx=15, pady=10)
         
-        # Game Telemetry Title
-        game_lbl = tk.Label(right_panel, text="Game Telemetry (STS2)", font=("SF Pro Text", 10, "bold"), fg="#8A8A9E", bg="#121216")
+        game_lbl = tk.Label(right_panel, text="Game Telemetry (STS2)", font=("SF Pro Text", 10, "bold"), fg="#8A8A9E", bg="#121314")
         game_lbl.pack(anchor="w", padx=15, pady=(0, 5))
         
         self.telemetry_floor_var = tk.StringVar(value="Floor: Act 1, Floor 0")
         self.telemetry_gold_var = tk.StringVar(value="Gold: 99g")
         self.telemetry_room_var = tk.StringVar(value="Room Type: event")
         
-        lbl_t_floor = tk.Label(right_panel, textvariable=self.telemetry_floor_var, font=("SF Pro Text", 9), fg="#E2E8F0", bg="#121216", anchor="w")
+        lbl_t_floor = tk.Label(right_panel, textvariable=self.telemetry_floor_var, font=("SF Pro Text", 9), fg="#E2E8F0", bg="#121314", anchor="w")
         lbl_t_floor.pack(fill="x", padx=15, pady=2)
         
-        lbl_t_gold = tk.Label(right_panel, textvariable=self.telemetry_gold_var, font=("SF Pro Text", 9), fg="#FFD54F", bg="#121216", anchor="w")
+        lbl_t_gold = tk.Label(right_panel, textvariable=self.telemetry_gold_var, font=("SF Pro Text", 9), fg="#FFD54F", bg="#121314", anchor="w")
         lbl_t_gold.pack(fill="x", padx=15, pady=2)
         
-        lbl_t_room = tk.Label(right_panel, textvariable=self.telemetry_room_var, font=("SF Pro Text", 9), fg="#00E5FF", bg="#121216", anchor="w")
+        lbl_t_room = tk.Label(right_panel, textvariable=self.telemetry_room_var, font=("SF Pro Text", 9), fg="#00E5FF", bg="#121314", anchor="w")
         lbl_t_room.pack(fill="x", padx=15, pady=2)
         
-        # HP bar label & Canvas
-        hp_lbl = tk.Label(right_panel, text="Player Health Points:", font=("SF Pro Text", 8), fg="#8A8A9E", bg="#121216")
+        hp_lbl = tk.Label(right_panel, text="Player Health Points:", font=("SF Pro Text", 8), fg="#8A8A9E", bg="#121314")
         hp_lbl.pack(anchor="w", padx=15, pady=(5, 2))
         
         self.hp_bar = tk.Canvas(right_panel, width=190, height=18, bg="#0D0D11", highlightthickness=1, highlightbackground="#2C2C3A")
         self.hp_bar.pack(padx=15, pady=(0, 10))
         self.draw_hp_bar(80, 80)
         
-        # Current active brain indicator
         self.active_brain_var = tk.StringVar(value="Active Brain: SPIRE")
-        lbl_brain = tk.Label(right_panel, textvariable=self.active_brain_var, font=("SF Pro Text", 9, "bold"), fg="#A259FF", bg="#121216", anchor="w")
+        lbl_brain = tk.Label(right_panel, textvariable=self.active_brain_var, font=("SF Pro Text", 9, "bold"), fg="#A259FF", bg="#121314", anchor="w")
         lbl_brain.pack(fill="x", padx=15, pady=(5, 10))
-        
-        # Bind hover transitions for premium micro-animations
-        self.bind_button_hover(self.plan_btn, "#A259FF", "#B370FF")
-        self.bind_button_hover(self.dispatch_btn, "#00E676", "#33FF8A")
-        self.bind_button_hover(self.start_player_btn, "#A259FF", "#B370FF")
-        self.bind_button_hover(self.stop_player_btn, "#FF1744", "#FF4D6A")
 
     def animate_status_dot(self):
         if not hasattr(self, '_dot_pulse_val'):
@@ -328,18 +404,16 @@ class DesignPluginDashboard:
         if self._dot_pulse_val >= 6 or self._dot_pulse_val <= 0:
             self._dot_pulse_dir *= -1
             
-        # Select base color
         if self.is_player_running:
-            base_color = "#A259FF"  # Purple
+            base_color = "#0070d1"
         elif self.is_thinking:
-            base_color = "#FF9100"  # Orange
+            base_color = "#FF9100"
         elif hasattr(self, 'next_action_data') and self.next_action_data:
-            base_color = "#00E676"  # Green
+            base_color = "#00E676"
         else:
-            base_color = "#2979FF"  # Blue
+            base_color = "#2979FF"
             
         self.status_dot.delete("all")
-        # Pulse glow outline
         r_offset = self._dot_pulse_val // 2
         self.status_dot.create_oval(6 - r_offset, 6 - r_offset, 6 + r_offset, 6 + r_offset, fill=base_color, outline="")
         self.status_dot.create_oval(3, 3, 9, 9, fill=base_color, outline="#121216", width=1.5)
@@ -347,34 +421,42 @@ class DesignPluginDashboard:
         self.root.after(120, self.animate_status_dot)
 
     def draw_status_dot(self, color):
-        # Fallback/override compatible with dynamic animator
         pass
 
-    def bind_button_hover(self, button, normal_bg, active_bg):
-        def on_enter(e):
-            if button.cget("state") != "disabled":
-                button.config(bg=active_bg)
-        def on_leave(e):
-            if button.cget("state") != "disabled":
-                button.config(bg=normal_bg)
-        button.bind("<Enter>", on_enter)
-        button.bind("<Leave>", on_leave)
+    def monitor_ollama_status(self):
+        def check():
+            while True:
+                try:
+                    response = requests.get(f"{self.ollama_url}/api/tags", timeout=3.0)
+                    if response.status_code == 200:
+                        self.root.after(0, lambda: self.update_ollama_status(True))
+                    else:
+                        self.root.after(0, lambda: self.update_ollama_status(False))
+                except Exception:
+                    self.root.after(0, lambda: self.update_ollama_status(False))
+                time.sleep(5.0)
+                
+        threading.Thread(target=check, daemon=True).start()
+
+    def update_ollama_status(self, is_online):
+        if is_online:
+            self.ollama_status_var.set("Ollama: ONLINE")
+            self.ollama_status_lbl.config(fg="#00E676") # Green for online
+        else:
+            self.ollama_status_var.set("Ollama: OFFLINE")
+            self.ollama_status_lbl.config(fg="#FF1744") # Red/orange for offline
 
     def draw_radar_grid(self):
         self.radar.delete("all")
         w, h = 160, 160
         cx, cy = w // 2, h // 2
         
-        # Target concentric circles (15px, 35px, 55px)
         self.radar.create_oval(cx - 15, cy - 15, cx + 15, cy + 15, outline="#2C2C3A", width=1)
         self.radar.create_oval(cx - 35, cy - 35, cx + 35, cy + 35, outline="#2C2C3A", width=1)
         self.radar.create_oval(cx - 55, cy - 55, cx + 55, cy + 55, outline="#2C2C3A", width=1)
         
-        # Crosshair axes
         self.radar.create_line(cx - 70, cy, cx + 70, cy, fill="#2C2C3A", width=1)
         self.radar.create_line(cx, cy - 70, cx, cy + 70, fill="#2C2C3A", width=1)
-        
-        # Center marker
         self.radar.create_oval(cx - 3, cy - 3, cx + 3, cy + 3, fill="#8A8A9E")
 
     def update_radar_points(self):
@@ -382,26 +464,23 @@ class DesignPluginDashboard:
         w, h = 160, 160
         cx, cy = w // 2, h // 2
         
-        # Draw past click deltas
         if self.click_history:
-            for item in self.click_history[-20:]: # Show last 20 clicks
+            for item in self.click_history[-20:]:
                 dx = item.get("dx", 0)
                 dy = item.get("dy", 0)
                 
                 px = cx + int(dx)
                 py = cy + int(dy)
                 
-                # Color code points by distance (closer = green, farther = orange/red)
                 dist = (dx**2 + dy**2)**0.5
-                color = "#00E676" # Green
+                color = "#00E676"
                 if dist > 20:
-                    color = "#FF9100" # Orange
+                    color = "#FF9100"
                 if dist > 40:
-                    color = "#FF1744" # Red
+                    color = "#FF1744"
                 
                 self.radar.create_oval(px - 3, py - 3, px + 3, py + 3, fill=color, outline="")
                 
-        # Draw large cyan average calibration dot
         acx = cx + int(round(self.mean_dx))
         acy = cy + int(round(self.mean_dy))
         self.radar.create_oval(acx - 5, acy - 5, acx + 5, acy + 5, fill="#00E5FF", outline="#FFFFFF", width=1.5)
@@ -424,7 +503,6 @@ class DesignPluginDashboard:
         w, h = 190, 18
         fill_w = int(w * self._current_hp_ratio)
         
-        # Color coding
         if self._current_hp_ratio > 0.5:
             color = "#00E676"
         elif self._current_hp_ratio > 0.25:
@@ -453,7 +531,6 @@ class DesignPluginDashboard:
             return
             
         self.is_thinking = True
-        self.draw_status_dot("#FF9100") # Thinking
         self.plan_btn.config(state="disabled", text="Thinking...")
         self.thought_text.config(state="normal")
         self.thought_text.delete(1.0, tk.END)
@@ -464,7 +541,6 @@ class DesignPluginDashboard:
     def run_planning_thread(self, goal):
         self.log_thought("💡 Initiating Cognitive Meta-Prompt reasoning loop...")
         
-        # Read current system status
         active_brain = "SPIRE"
         last_logs = []
         if os.path.exists(SYSTEM_STATUS):
@@ -480,7 +556,6 @@ class DesignPluginDashboard:
         if last_logs:
             self.log_thought(f"🔍 Last Action: {last_logs[-1]}")
             
-        # Formulate system instruction to the model
         system_instruction = f"""
         あなたはGUI自動化システムの「メタ・プロンプト・プランナーAI」です。
         ユーザーの目標に応じて、次に実行すべき低レイヤーのGUIコマンド（マウスクリック、方向調整、待機など）を考案・決定します。
@@ -539,14 +614,10 @@ class DesignPluginDashboard:
                     self.planned_action_var.set("None")
                     self.next_action_data = None
                     self.dispatch_btn.config(state="disabled")
-                    
-                self.draw_status_dot("#00E676") # Green = Action ready
             else:
                 self.log_thought(f"\n❌ Ollama server error: Status {response.status_code}")
-                self.draw_status_dot("#FF3333") # Red = Error
         except Exception as e:
             self.log_thought(f"\n❌ Failed to query Ollama API: {e}")
-            self.draw_status_dot("#FF3333") # Red = Error
             
         self.is_thinking = False
         self.root.after(0, lambda: self.plan_btn.config(state="normal", text="Generate Action Plan (AI)"))
@@ -583,7 +654,6 @@ class DesignPluginDashboard:
             self.log_thought(f"❌ Failed to dispatch command: {e}")
 
     def get_latest_save_path_and_mtime(self):
-        """Finds the latest save file path and its modification time, without parsing it yet."""
         paths = []
         paths.extend(glob.glob(r"C:\Users\yu_ci\AppData\Roaming\SlayTheSpire2\steam\**\profile*\saves\current_run.save", recursive=True))
         paths.extend(glob.glob(r"C:\Program Files (x86)\Steam\userdata\*\2868840\remote\**\profile*\saves\current_run.save", recursive=True))
@@ -631,7 +701,6 @@ class DesignPluginDashboard:
                 response = requests.post(url, json=payload, timeout=None)
                 if response.status_code == 200:
                     discovered_goal = response.json().get("response", "").strip()
-                    # Strip any markdown backticks or quotes if the model wrapped them
                     discovered_goal = discovered_goal.replace('"', '').replace('`', '').strip()
                     
                     if discovered_goal and discovered_goal.startswith("Slay the Spire 2:"):
@@ -651,7 +720,6 @@ class DesignPluginDashboard:
             self.log_thought(f"✨ [Goal Discovery] Formulated new objective: '{new_goal}'")
 
     def start_monitoring(self):
-        # Start real-time monitoring
         def monitor():
             while True:
                 # 1. Load Slay the Spire 2 Save file telemetry
@@ -662,31 +730,25 @@ class DesignPluginDashboard:
                         with open(latest_path, "r", encoding="utf-8") as f:
                             save_data = json.load(f)
                         
-                        # Extract players metadata
                         if "players" in save_data and save_data["players"]:
                             player = save_data["players"][0]
                             self.current_hp = player.get("current_hp", 80)
                             self.max_hp = player.get("max_hp", 80)
                             self.gold = player.get("gold", 99)
                             
-                        # Extract map coordinate floor progress
                         visited = save_data.get("visited_map_coords", [])
                         self.floor = len(visited)
                         self.act = save_data.get("current_act_index", 0) + 1
                         
-                        # Extract room type
                         room_info = save_data.get("pre_finished_room", {})
                         self.room_type = room_info.get("room_type", "unknown")
                         
-                        # Update Telemetry Labels
                         self.telemetry_floor_var.set(f"Floor: Act {self.act}, Floor {self.floor}")
                         self.telemetry_gold_var.set(f"Gold: {self.gold}g")
                         self.telemetry_room_var.set(f"Room Type: {self.room_type}")
                         
-                        # Update HP bar UI
                         self.root.after(0, lambda: self.draw_hp_bar(self.current_hp, self.max_hp))
                         
-                        # Trigger Goal Discovery if auto-discover option is checked
                         if self.auto_discover_var.get():
                             self.query_goal_discovery()
                     except:
@@ -743,7 +805,6 @@ class DesignPluginDashboard:
             return
             
         self.is_player_running = True
-        self.draw_status_dot("#A259FF") # Purple for active autonomous player
         self.start_player_btn.config(state="disabled")
         self.stop_player_btn.config(state="normal")
         self.log_thought("🚀 Starting AGI Closed-Loop Autonomous Player...")
@@ -794,7 +855,6 @@ class DesignPluginDashboard:
 
     def cleanup_player(self):
         self.is_player_running = False
-        self.draw_status_dot("#2979FF") # Blue for ready
         self.start_player_btn.config(state="normal")
         self.stop_player_btn.config(state="disabled")
         self.log_thought("🔌 Autonomous Player stopped.")

@@ -206,7 +206,33 @@ def log(msg):
             pass
 
 def search_duckduckgo(query):
-    """Queries DuckDuckGo programmatic instant answer API without triggering captchas."""
+    """Queries DuckDuckGo HTML search for detailed snippets, falling back to programmatic JSON API."""
+    # Try HTML search first for rich snippets
+    try:
+        url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(query)}"
+        req = urllib.request.Request(
+            url, 
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
+        )
+        with urllib.request.urlopen(req, timeout=10) as response:
+            html = response.read().decode('utf-8')
+            
+        snippets = re.findall(r'<a[^>]*class="result__snippet"[^>]*>(.*?)</a>', html, re.DOTALL)
+        results = []
+        for snip in snippets[:4]:
+            clean_snip = re.sub(r'<[^>]*>', '', snip).strip()
+            clean_snip = clean_snip.replace('&amp;', '&').replace('&quot;', '"').replace('&#x27;', "'").replace('&lt;', '<').replace('&gt;', '>')
+            if clean_snip:
+                results.append(f"- {clean_snip}")
+                
+        if results:
+            return "\n".join(results)
+    except Exception as e:
+        log(f"DuckDuckGo HTML Search Error (falling back to JSON API): {e}")
+
+    # Fallback to Instant Answer JSON API
     try:
         url = f"https://api.duckduckgo.com/?q={urllib.parse.quote(query)}&format=json"
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
@@ -225,10 +251,11 @@ def search_duckduckgo(query):
                 results.append(f"- {r['Text']}")
                 
         if not results:
-            return "No instant answer results found on DuckDuckGo."
+            return f"No results found on DuckDuckGo for '{query}'."
         return "\n".join(results)
     except Exception as e:
         return f"DuckDuckGo API Error: {e}"
+
 
 def call_ollama(model_name, messages, options=None):
     """Sends chat messages to local Ollama API via urllib."""

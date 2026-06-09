@@ -22,6 +22,9 @@ import numpy as np
 import ctypes
 import ctypes.wintypes
 import argparse
+import urllib.parse
+import http.server
+import socketserver
 
 # Reconfigure stdout/stderr to UTF-8
 try:
@@ -156,14 +159,711 @@ class PillButton(tk.Canvas):
             self.fg_color_current = self.fg_color
         self.draw_button()
 
+log_history = []
+
 def log(msg):
     print(f"[Tray-Agent] {msg}", flush=True)
-    global active_ui_instance
+    global active_ui_instance, log_history
+    log_history.append(f"[{time.strftime('%H:%M:%S')}] {msg}")
+    if len(log_history) > 100:
+        log_history = log_history[-100:]
     if active_ui_instance:
         try:
             active_ui_instance.root.after(0, lambda: active_ui_instance.append_log(msg))
         except Exception:
             pass
+
+def get_dashboard_html():
+    return """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resident Agent Control Center</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+            background: radial-gradient(circle at top, #1C1C1E 0%, #000000 100%);
+            color: #FFFFFF;
+            min-height: 100vh;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #FF9F0A; /* Amber by default */
+        }
+        .pulse-dot.active {
+            background-color: #30D158; /* Green */
+            box-shadow: 0 0 12px #30D158;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 24px;
+        }
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .card {
+            background: rgba(28, 28, 30, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .card-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #8E8E93;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+        }
+        .control-label {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .control-name {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .control-desc {
+            font-size: 12px;
+            color: #8E8E93;
+        }
+        /* iOS Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 51px;
+            height: 31px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #39393D;
+            transition: .3s;
+            border-radius: 31px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 27px;
+            width: 27px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+        }
+        input:checked + .slider {
+            background-color: #30D158;
+        }
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+        /* Combobox / Select styling */
+        .select-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+        select {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #FFFFFF;
+            padding: 10px 14px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+            cursor: pointer;
+        }
+        select:focus {
+            border-color: #0A84FF;
+        }
+        .btn-pill {
+            background: #0A84FF;
+            color: #FFFFFF;
+            border: none;
+            border-radius: 20px;
+            padding: 10px 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .btn-pill:hover {
+            opacity: 0.9;
+            transform: scale(0.98);
+        }
+        .btn-pill.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .btn-pill.secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        /* Brain Pill Selection */
+        .brain-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+        }
+        .brain-pill {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .brain-pill:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .brain-pill.active {
+            background: #0A84FF;
+            border-color: #0A84FF;
+            box-shadow: 0 0 12px rgba(10, 132, 255, 0.4);
+        }
+        /* Console log panel */
+        .console-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1;
+        }
+        .console-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .console-output {
+            background: #000000;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 16px;
+            font-family: "SF Mono", Consolas, Menlo, Monaco, monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #30D158;
+            height: 280px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+        .info-panel {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 13px;
+            line-height: 1.5;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .info-panel h3 {
+            font-size: 14px;
+            font-weight: 700;
+            color: #0A84FF;
+            margin-bottom: 6px;
+        }
+        .info-text {
+            color: #C7C7CC;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>Control Center</h1>
+                <p style="font-size: 13px; color: #8E8E93; margin-top: 4px;">Task Tray Resident OS Agent</p>
+            </div>
+            <div class="status-badge">
+                <div id="status-dot" class="pulse-dot"></div>
+                <span id="status-text">Idle</span>
+            </div>
+        </header>
+
+        <div class="dashboard-grid">
+            <!-- Left Column: Controls -->
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+                <!-- System Status -->
+                <div class="card">
+                    <div class="card-title">System Controls</div>
+                    <div class="control-row">
+                        <div class="control-label">
+                            <span class="control-name">Autonomous Loop</span>
+                            <span class="control-desc">Enable screenshot matching autopilot</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="loop-toggle" onchange="toggleLoop()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label">
+                            <span class="control-name">Background Automation</span>
+                            <span class="control-desc">Use Win32 inputs instead of physical clicks</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="bg-toggle" onchange="toggleBackground()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Target Window -->
+                <div class="card">
+                    <div class="card-title">Target Window</div>
+                    <div class="select-wrapper">
+                        <select id="window-select" onchange="selectWindow()">
+                            <option value="0">Scanning windows...</option>
+                        </select>
+                        <button class="btn-pill secondary" onclick="refreshWindows()">Scan</button>
+                    </div>
+                    <div id="active-target-desc" style="font-size: 12px; color: #8E8E93;">Active window: None</div>
+                </div>
+
+                <!-- Brain Swapper -->
+                <div class="card">
+                    <div class="card-title">Active Task Brain</div>
+                    <div class="brain-grid" id="brain-container">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Console & Telemetry -->
+            <div class="card">
+                <div class="card-title">Console Logs</div>
+                <div class="console-container">
+                    <div class="console-header">
+                        <span style="font-size: 12px; color: #8E8E93;" id="log-count">0 entries</span>
+                        <button class="btn-pill secondary" style="padding: 6px 12px; font-size: 11px;" onclick="clearLogsUI()">Clear UI</button>
+                    </div>
+                    <div class="console-output" id="console-box">Initializing console logs...</div>
+                </div>
+                
+                <div class="info-panel">
+                    <h3>Active Brain Config</h3>
+                    <div id="brain-config-desc" class="info-text">Loading profile details...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let statusInterval = null;
+        let lastLogCount = 0;
+        let isScrolledToBottom = true;
+
+        const consoleBox = document.getElementById("console-box");
+        consoleBox.addEventListener('scroll', () => {
+            isScrolledToBottom = consoleBox.scrollHeight - consoleBox.clientHeight <= consoleBox.scrollTop + 10;
+        });
+
+        async function fetchStatus() {
+            try {
+                const res = await fetch("/api/status");
+                const data = await res.json();
+                
+                // Update loop switch
+                document.getElementById("loop-toggle").checked = data.loop_active;
+                
+                // Update bg switch
+                document.getElementById("bg-toggle").checked = data.background_mode;
+                
+                // Update status badge
+                const dot = document.getElementById("status-dot");
+                const text = document.getElementById("status-text");
+                if (data.loop_active) {
+                    dot.className = "pulse-dot active";
+                    text.innerText = "Loop Active";
+                    text.style.color = "#30D158";
+                } else {
+                    dot.className = "pulse-dot";
+                    text.innerText = "Idle";
+                    text.style.color = "#FFFFFF";
+                }
+                
+                // Update target window label
+                document.getElementById("active-target-desc").innerText = "Active: " + data.target_window_title + " (HWND: " + data.target_hwnd + ")";
+                
+                // Highlight active brain
+                document.querySelectorAll(".brain-pill").forEach(el => {
+                    if (el.dataset.brain === data.active_brain) {
+                        el.classList.add("active");
+                    } else {
+                        el.classList.remove("active");
+                    }
+                });
+
+                // Update active brain details
+                updateBrainDetails(data.active_brain);
+                
+            } catch (err) {
+                console.error("Status check failed:", err);
+            }
+        }
+
+        async function updateBrainDetails(brainName) {
+            const brainConfigDesc = document.getElementById("brain-config-desc");
+            if (brainName === "research_brain") {
+                brainConfigDesc.innerHTML = "<strong>Profile:</strong> Research Auto-Pilot<br><strong>Goal:</strong> Automate web-based research and UI validation.";
+            } else if (brainName === "files_brain") {
+                brainConfigDesc.innerHTML = "<strong>Profile:</strong> File System Watcher<br><strong>Goal:</strong> Monitor file changes and trigger workflows.";
+            } else {
+                brainConfigDesc.innerHTML = "<strong>Profile:</strong> " + brainName + "<br><strong>Goal:</strong> Custom visual automation task.";
+            }
+        }
+
+        async function fetchLogs() {
+            try {
+                const res = await fetch("/api/logs");
+                const data = await res.json();
+                const logs = data.logs || [];
+                
+                if (logs.length !== lastLogCount) {
+                    consoleBox.innerText = logs.join("\\n");
+                    document.getElementById("log-count").innerText = logs.length + " entries";
+                    lastLogCount = logs.length;
+                    
+                    if (isScrolledToBottom) {
+                        consoleBox.scrollTop = consoleBox.scrollHeight;
+                    }
+                }
+            } catch (err) {
+                console.error("Log fetch failed:", err);
+            }
+        }
+
+        async function fetchBrains() {
+            try {
+                const res = await fetch("/api/brains");
+                const brains = await res.json();
+                const container = document.getElementById("brain-container");
+                container.innerHTML = "";
+                
+                brains.forEach(b => {
+                    const pill = document.createElement("div");
+                    pill.className = "brain-pill";
+                    pill.dataset.brain = b;
+                    pill.innerText = b.replace("_brain", "");
+                    pill.onclick = () => setBrain(b);
+                    container.appendChild(pill);
+                });
+            } catch (err) {
+                console.error("Brain fetch failed:", err);
+            }
+        }
+
+        async function refreshWindows() {
+            try {
+                const res = await fetch("/api/windows");
+                const windows = await res.json();
+                const select = document.getElementById("window-select");
+                select.innerHTML = '<option value="0">Select target background window...</option>';
+                
+                windows.forEach(w => {
+                    const opt = document.createElement("option");
+                    opt.value = w.hwnd;
+                    opt.innerText = w.title;
+                    select.appendChild(opt);
+                });
+                
+                const statusRes = await fetch("/api/status");
+                const status = await statusRes.json();
+                if (status.target_hwnd) {
+                    select.value = status.target_hwnd;
+                }
+            } catch (err) {
+                console.error("Window scan failed:", err);
+            }
+        }
+
+        async function toggleLoop() {
+            await fetch("/api/toggle", { method: "POST" });
+            fetchStatus();
+        }
+
+        async function toggleBackground() {
+            await fetch("/api/toggle_bg", { method: "POST" });
+            fetchStatus();
+        }
+
+        async function setBrain(brainName) {
+            await fetch("/api/set_brain", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ brain: brainName })
+            });
+            fetchStatus();
+        }
+
+        async function selectWindow() {
+            const select = document.getElementById("window-select");
+            const hwnd = select.value;
+            if (hwnd !== "0") {
+                await fetch("/api/select_window", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ hwnd: hwnd })
+                });
+                fetchStatus();
+            }
+        }
+
+        function clearLogsUI() {
+            consoleBox.innerText = "Console cleared on UI.";
+            lastLogCount = 0;
+        }
+
+        // Init
+        (async () => {
+            await fetchBrains();
+            await refreshWindows();
+            await fetchStatus();
+            await fetchLogs();
+            
+            setInterval(fetchStatus, 1000);
+            setInterval(fetchLogs, 1000);
+        })();
+    </script>
+</body>
+</html>
+"""
+
+class DashboardHandler(http.server.BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+        pass
+
+    def do_GET(self):
+        global loop_active, active_brain, background_mode, target_hwnd, target_window_title, log_history
+        parsed_url = urllib.parse.urlparse(self.path)
+        
+        if parsed_url.path == "/":
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(get_dashboard_html().encode("utf-8"))
+            
+        elif parsed_url.path == "/api/status":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            status = {
+                "loop_active": loop_active,
+                "active_brain": active_brain,
+                "background_mode": background_mode,
+                "target_window_title": target_window_title,
+                "target_hwnd": target_hwnd or 0
+            }
+            self.wfile.write(json.dumps(status).encode("utf-8"))
+            
+        elif parsed_url.path == "/api/logs":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"logs": log_history}).encode("utf-8"))
+            
+        elif parsed_url.path == "/api/windows":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            win_list = scan_visible_windows()
+            res = [{"hwnd": hwnd, "title": title} for hwnd, title in win_list]
+            self.wfile.write(json.dumps(res).encode("utf-8"))
+            
+        elif parsed_url.path == "/api/brains":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            brains = []
+            if os.path.exists(BRAINS_DIR):
+                for f in os.listdir(BRAINS_DIR):
+                    if f.endswith(".json"):
+                        brains.append(f.replace(".json", ""))
+            if not brains:
+                brains = ["research_brain", "files_brain"]
+            self.wfile.write(json.dumps(brains).encode("utf-8"))
+        else:
+            self.send_error(404, "Not Found")
+
+    def do_POST(self):
+        global loop_active, active_brain, background_mode, target_hwnd, target_window_title, global_tray_icon
+        parsed_url = urllib.parse.urlparse(self.path)
+        content_length = int(self.headers.get('Content-Length', 0))
+        body = self.rfile.read(content_length).decode('utf-8') if content_length > 0 else ""
+        
+        params = {}
+        if body:
+            try:
+                params = json.loads(body)
+            except Exception:
+                try:
+                    params = dict(urllib.parse.parse_qsl(body))
+                except Exception:
+                    pass
+                    
+        if parsed_url.path == "/api/toggle":
+            loop_active = not loop_active
+            log(f"Autonomous Loop toggled via Web API to: {loop_active}")
+            if global_tray_icon:
+                try:
+                    global_tray_icon.icon = create_icon_image()
+                except Exception:
+                    pass
+            trigger_ui_refresh()
+            
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"success": True, "loop_active": loop_active}).encode("utf-8"))
+            
+        elif parsed_url.path == "/api/toggle_bg":
+            background_mode = not background_mode
+            log(f"Background mode toggled via Web API to: {background_mode}")
+            trigger_ui_refresh()
+            
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"success": True, "background_mode": background_mode}).encode("utf-8"))
+            
+        elif parsed_url.path == "/api/set_brain":
+            brain_name = params.get("brain")
+            if brain_name:
+                active_brain = brain_name
+                log(f"Brain profile switched via Web API to: {active_brain}")
+                global active_ui_instance
+                if active_ui_instance:
+                    try:
+                        active_ui_instance.root.after(0, active_ui_instance.refresh_brain_profile)
+                    except Exception:
+                        pass
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": True, "active_brain": active_brain}).encode("utf-8"))
+            else:
+                self.send_error(400, "Missing brain parameter")
+                
+        elif parsed_url.path == "/api/select_window":
+            hwnd_val = params.get("hwnd")
+            if hwnd_val is not None:
+                try:
+                    hwnd = int(hwnd_val)
+                    win_list = scan_visible_windows()
+                    found = False
+                    for h, title in win_list:
+                        if h == hwnd:
+                            target_hwnd = hwnd
+                            target_window_title = title
+                            found = True
+                            log(f"Target window set via Web API to: '{title}' (HWND: {hwnd})")
+                            break
+                    
+                    if found:
+                        if active_ui_instance:
+                            try:
+                                active_ui_instance.root.after(0, active_ui_instance.refresh_windows_list)
+                            except Exception:
+                                pass
+                        self.send_response(200)
+                        self.send_header("Content-Type", "application/json")
+                        self.end_headers()
+                        self.wfile.write(json.dumps({"success": True, "target_window_title": target_window_title}).encode("utf-8"))
+                    else:
+                        self.send_error(404, "Window HWND not found")
+                except Exception as e:
+                    self.send_error(400, f"Invalid HWND format: {e}")
+            else:
+                self.send_error(400, "Missing hwnd parameter")
+        else:
+            self.send_error(404, "Not Found")
+
+def start_web_server():
+    server_address = ('', 8500)
+    try:
+        class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+            allow_reuse_address = True
+        httpd = ThreadedHTTPServer(server_address, DashboardHandler)
+        log("Web Dashboard server running on http://localhost:8500")
+        httpd.serve_forever()
+    except Exception as e:
+        log(f"Failed to start Web Dashboard server: {e}")
 
 def compare_images(img1, img2):
     """Compares two PIL images and returns similarity ratio (0.0 to 1.0)."""
@@ -973,6 +1673,8 @@ def trigger_ui_refresh():
     if active_ui_instance:
         try:
             active_ui_instance.root.after(0, active_ui_instance.refresh_list)
+            active_ui_instance.root.after(0, active_ui_instance.refresh_brain_profile)
+            active_ui_instance.root.after(0, active_ui_instance.refresh_windows_list)
         except Exception:
             pass
 
@@ -1039,6 +1741,9 @@ def main():
         loop_active = True
         log("Autostarting autonomous loop from CLI.")
         
+    # Start web server thread
+    threading.Thread(target=start_web_server, daemon=True).start()
+    
     # Start background loop thread
     threading.Thread(target=autonomous_loop, daemon=True).start()
     

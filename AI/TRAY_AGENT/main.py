@@ -300,6 +300,8 @@ def autonomous_loop():
     
     previous_screenshot = None
     consecutive_stuck_count = 0
+    last_matched_template = None
+    temporary_blacklist = {}
     
     while running:
         if loop_active:
@@ -370,16 +372,22 @@ def autonomous_loop():
                     consecutive_stuck_count += 1
                     log(f"⚠️ [Stuck Detected] Visual verification failed! Consecutive stuck count: {consecutive_stuck_count}/5")
                     
+                    # Phase 2: Window Focus / Foregrounding (Cycles 3, 4)
+                    if consecutive_stuck_count in [3, 4] and background_mode and target_hwnd and ctypes.windll.user32.IsWindow(target_hwnd):
+                        log("⚠️ [Stuck Recovery] Restoring and bringing target window to foreground to ensure focus...")
+                        ctypes.windll.user32.ShowWindow(target_hwnd, 9)  # SW_RESTORE
+                        ctypes.windll.user32.SetForegroundWindow(target_hwnd)
+                        time.sleep(0.4)
+                    
+                    # Phase 3: Temporary Template Blacklisting (Cycle 5)
                     if consecutive_stuck_count >= 5:
-                        log("🚨 [Runaway Protection Active] Stuck count reached limit! Suspending autonomous loop to prevent infinite click loop.")
-                        loop_active = False
+                        if last_matched_template:
+                            log(f"🚨 [Stuck Recovery] Template '{last_matched_template}' failed repeatedly. Blacklisting it for 3 cycles.")
+                            temporary_blacklist[last_matched_template] = 3
+                        else:
+                            log("🚨 [Stuck Recovery] Stuck state detected, but no template name was recorded.")
+                        
                         consecutive_stuck_count = 0
-                        try:
-                            if global_tray_icon:
-                                global_tray_icon.icon = create_icon_image()
-                        except Exception:
-                            pass
-                        continue
                     
                     cx, cy = last_click_coord
                     sw, sh = current_screenshot.size
@@ -430,15 +438,30 @@ def autonomous_loop():
             
             for t_file in templates:
                 t_name = t_file.replace(".png", "")
-                t_path = os.path.join(MEMORIES_DIR, t_file)
                 
+                # Skip blacklisted templates
+                if t_name in temporary_blacklist:
+                    continue
+                    
+                t_path = os.path.join(MEMORIES_DIR, t_file)
                 thresh = thresholds.get(t_name, 0.85)
                 
                 # Multi-scale robust template matching
                 match_result = find_template_multi_scale(current_screenshot, t_path, thresh)
                 if match_result:
                     coord, val = match_result
+                    
+                    # Stuck Recovery Phase 1: Coordinate Nudging (Cycles 1, 2)
+                    if consecutive_stuck_count in [1, 2]:
+                        import random
+                        dx = random.choice([-10, -8, -6, 6, 8, 10])
+                        dy = random.choice([-10, -8, -6, 6, 8, 10])
+                        nudged_coord = (coord[0] + dx, coord[1] + dy)
+                        log(f"⚠️ [Stuck Recovery] Nudging click coordinates from {coord} to {nudged_coord} (delta: {dx}, {dy})")
+                        coord = nudged_coord
+                        
                     last_click_coord = coord
+                    last_matched_template = t_name
                     match_found = True
                     log(f"🎯 Match found: '{t_name}' at client coordinate {coord} with confidence {val:.2f}.")
                     
@@ -452,11 +475,23 @@ def autonomous_loop():
             
             if not match_found:
                 log("No matching visual templates detected on screen. Autopilot waiting...")
+            
+            # Decrement blacklist counters
+            expired_keys = []
+            for k in list(temporary_blacklist.keys()):
+                temporary_blacklist[k] -= 1
+                if temporary_blacklist[k] <= 0:
+                    expired_keys.append(k)
+            for k in expired_keys:
+                del temporary_blacklist[k]
+                log(f"🔓 Blacklist expired for template '{k}'. Re-enabling search.")
                 
             time.sleep(4.0)
         else:
             previous_screenshot = None
             consecutive_stuck_count = 0
+            last_matched_template = None
+            temporary_blacklist = {}
             time.sleep(1.0)
 
 # --- Snipping Tool Overlay ---

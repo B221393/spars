@@ -22,6 +22,9 @@ import numpy as np
 import ctypes
 import ctypes.wintypes
 import argparse
+import urllib.request
+import urllib.parse
+import re
 
 # Reconfigure stdout/stderr to UTF-8
 try:
@@ -53,6 +56,35 @@ target_window_title = "None"
 active_ui_instance = None
 last_click_coord = (480, 320)
 mock_stuck_simulation = False
+
+# Abbreviation Inference Mapping for Target Window Matching
+ABBREVIATION_MAP = {
+    "ユニ": ["unity", "unity editor"],
+    "パワポ": ["powerpoint", "presentation"],
+    "スラザス": ["slay the spire", "spire"],
+    "スラザス2": ["slay the spire 2", "spire 2"],
+    "クローム": ["chrome", "google chrome"],
+    "エクセル": ["excel", "spreadsheet"],
+    "ワード": ["word", "document"],
+    "エクスプローラ": ["explorer", "file explorer"],
+    "サファリ": ["safari"],
+    "スカイプ": ["skype"],
+    "ズーム": ["zoom"],
+    "チームズ": ["teams", "microsoft teams"],
+    "ノート": ["notepad", "memo"],
+    "ペイント": ["paint", "mspaint"]
+}
+
+# OpenClaw Local LLM Chat Assistant System Prompts
+OPENCLAW_SYSTEM_PROMPT = (
+    "You are OpenClaw, a premium local AI desktop assistant. "
+    "You have access to the internet via the DuckDuckGo search tool. "
+    "If the user asks a question that requires current information, or something you do not know, "
+    "you MUST respond ONLY with the exact search query format: [SEARCH: <query>]. "
+    "For example: [SEARCH: weather in Tokyo today]. "
+    "If you already have enough information or the search results are provided in the message, "
+    "answer the user directly and concisely. Do not explain the search syntax to the user."
+)
 
 # Win32 Constants
 WM_LBUTTONDOWN = 0x0201
@@ -164,6 +196,51 @@ def log(msg):
             active_ui_instance.root.after(0, lambda: active_ui_instance.append_log(msg))
         except Exception:
             pass
+
+def search_duckduckgo(query):
+    """Queries DuckDuckGo programmatic instant answer API without triggering captchas."""
+    try:
+        url = f"https://api.duckduckgo.com/?q={urllib.parse.quote(query)}&format=json"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=10) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            
+        abstract = data.get("AbstractText", "")
+        related = data.get("RelatedTopics", [])
+        
+        results = []
+        if abstract:
+            results.append(f"Abstract Summary: {abstract}")
+            
+        for r in related[:3]:
+            if "Text" in r:
+                results.append(f"- {r['Text']}")
+                
+        if not results:
+            return "No instant answer results found on DuckDuckGo."
+        return "\n".join(results)
+    except Exception as e:
+        return f"DuckDuckGo API Error: {e}"
+
+def call_ollama(model_name, messages, options=None):
+    """Sends chat messages to local Ollama API via urllib."""
+    url = "http://localhost:11434/api/chat"
+    payload = {
+        "model": model_name,
+        "messages": messages,
+        "stream": False
+    }
+    if options:
+        payload["options"] = options
+        
+    try:
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=30) as response:
+            res_data = json.loads(response.read().decode("utf-8"))
+            return res_data["message"]["content"]
+    except Exception as e:
+        return f"Ollama Connection Error (Make sure Ollama is running): {e}"
 
 def compare_images(img1, img2):
     """Compares two PIL images and returns similarity ratio (0.0 to 1.0)."""
@@ -602,7 +679,7 @@ class MemoryManagerUI:
         self.root.resizable(False, False)
         self.root.attributes("-alpha", 0.98)
         
-        # Configure TTK style for Combobox to match macOS premium dark theme
+        # Configure TTK style for Combobox and Notebook to match macOS premium dark theme
         self.style = ttk.Style()
         self.style.theme_use('clam')
         self.style.configure("TCombobox", 
@@ -615,6 +692,13 @@ class MemoryManagerUI:
             arrowcolor="#FFFFFF"
         )
         self.style.map("TCombobox", fieldbackground=[('readonly', '#16161D')])
+        
+        self.style.configure("TNotebook", background="#1A1A1E", borderwidth=0)
+        self.style.configure("TNotebook.Tab", background="#26262E", foreground="#8E8E93", padding=[12, 6], font=("SF Pro Text", 9, "bold"))
+        self.style.map("TNotebook.Tab",
+            background=[("selected", "#0A84FF")],
+            foreground=[("selected", "#FFFFFF")]
+        )
         
         self.preview_photo = None
         self.build_widgets()
@@ -635,9 +719,22 @@ class MemoryManagerUI:
         subtitle_label = tk.Label(header_frame, text="TELEMETRY GRIND CONSOLE", font=("SF Pro Text", 8, "bold"), fg="#0A84FF", bg="#1A1A1E")
         subtitle_label.pack(side="left", padx=10, pady=5)
 
+        # Tab notebook
+        notebook = ttk.Notebook(self.root)
+        notebook.pack(fill="both", expand=True, padx=20, pady=(5, 10))
+        
+        # Tab 1: Autopilot Dashboard
+        tab_autopilot = tk.Frame(notebook, bg="#1A1A1E")
+        notebook.add(tab_autopilot, text="  Autopilot  ")
+        
+        # Tab 2: OpenClaw Chat
+        tab_chat = tk.Frame(notebook, bg="#1A1A1E")
+        notebook.add(tab_chat, text="  OpenClaw Chat  ")
+
+        # --- Tab 1 (Autopilot) Content ---
         # Main Workspace Panel: Split into Left and Right Columns (macOS Dark Elevated #26262E)
-        middle_paned = tk.Frame(self.root, bg="#26262E", bd=1, relief="flat", highlightbackground="#3E3E4C", highlightthickness=1)
-        middle_paned.pack(fill="both", expand=True, padx=20, pady=10)
+        middle_paned = tk.Frame(tab_autopilot, bg="#26262E", bd=1, relief="flat", highlightbackground="#3E3E4C", highlightthickness=1)
+        middle_paned.pack(fill="both", expand=True, padx=0, pady=10)
         
         # Left Column: Templates list and management buttons
         left_col = tk.Frame(middle_paned, bg="#26262E")
@@ -700,8 +797,8 @@ class MemoryManagerUI:
         self.brain_prompt_lbl.pack(fill="both", expand=True, padx=10, pady=2)
 
         # Background Automation Controls (macOS Dark Elevated #26262E)
-        grind_frame = tk.LabelFrame(self.root, text="Background Grinding & Remote Play", font=("SF Pro Text", 9, "bold"), fg="#30D158", bg="#26262E", bd=1, relief="flat", highlightbackground="#3E3E4C", highlightthickness=1)
-        grind_frame.pack(fill="x", padx=20, pady=5, ipady=5)
+        grind_frame = tk.LabelFrame(tab_autopilot, text="Background Grinding & Remote Play", font=("SF Pro Text", 9, "bold"), fg="#30D158", bg="#26262E", bd=1, relief="flat", highlightbackground="#3E3E4C", highlightthickness=1)
+        grind_frame.pack(fill="x", padx=0, pady=5, ipady=5)
         
         self.bg_mode_var = tk.BooleanVar(value=background_mode)
         self.bg_mode_cb = tk.Checkbutton(grind_frame, text="Enable Background Automation (Win32)", variable=self.bg_mode_var, font=("SF Pro Text", 9, "bold"), fg="#FFFFFF", bg="#26262E", activebackground="#26262E", activeforeground="#FFFFFF", selectcolor="#16161D", bd=0, command=self.on_bg_toggle)
@@ -721,8 +818,8 @@ class MemoryManagerUI:
         self.refresh_win_btn.pack(side="left")
 
         # Scrolling Logging Console Window
-        console_frame = tk.LabelFrame(self.root, text="System Console Telemetry Logs", font=("SF Pro Text", 9, "bold"), fg="#FF9F0A", bg="#26262E", bd=1, relief="flat", highlightbackground="#3E3E4C", highlightthickness=1)
-        console_frame.pack(fill="x", padx=20, pady=5)
+        console_frame = tk.LabelFrame(tab_autopilot, text="System Console Telemetry Logs", font=("SF Pro Text", 9, "bold"), fg="#FF9F0A", bg="#26262E", bd=1, relief="flat", highlightbackground="#3E3E4C", highlightthickness=1)
+        console_frame.pack(fill="x", padx=0, pady=5)
         
         self.console = tk.Text(console_frame, height=8, bg="#16161D", fg="#30D158", font=("Consolas", 8), bd=0, wrap="word")
         self.console.pack(side="left", fill="both", expand=True, padx=5, pady=5)
@@ -733,12 +830,118 @@ class MemoryManagerUI:
         self.console.config(yscrollcommand=con_scroll.set)
         
         # Bottom exit row
-        bottom_frame = tk.Frame(self.root, bg="#1A1A1E")
-        bottom_frame.pack(fill="x", padx=20, pady=(5, 15))
+        bottom_frame = tk.Frame(tab_autopilot, bg="#1A1A1E")
+        bottom_frame.pack(fill="x", padx=0, pady=(5, 15))
         
         # Secondary Action: transparent background outline
         self.close_btn = PillButton(bottom_frame, "Close Console", self.on_close, bg_color="#26262E", active_color="#3E3E4C", border_color="#3E3E4C", width=120, height=32)
         self.close_btn.pack(side="right")
+
+        # --- Tab 2 (OpenClaw Chat) Content ---
+        chat_header = tk.Frame(tab_chat, bg="#1A1A1E")
+        chat_header.pack(fill="x", padx=15, pady=(10, 5))
+        chat_lbl = tk.Label(chat_header, text="OPENCLAW CHAT ASSISTANT", font=("SF Pro Text", 10, "bold"), fg="#FFFFFF", bg="#1A1A1E")
+        chat_lbl.pack(side="left")
+        
+        self.search_var = tk.BooleanVar(value=True)
+        search_cb = tk.Checkbutton(chat_header, text="Enable Internet Search", variable=self.search_var, font=("SF Pro Text", 8, "bold"), fg="#8E8E93", bg="#1A1A1E", activebackground="#1A1A1E", activeforeground="#FFFFFF", selectcolor="#16161D", bd=0)
+        search_cb.pack(side="right")
+        
+        chat_card = tk.Frame(tab_chat, bg="#26262E", bd=1, relief="flat", highlightbackground="#3E3E4C", highlightthickness=1)
+        chat_card.pack(fill="both", expand=True, padx=15, pady=5)
+        
+        self.chat_log = tk.Text(chat_card, bg="#16161D", fg="#FFFFFF", font=("SF Pro Text", 9), bd=0, wrap="word", padx=10, pady=10)
+        self.chat_log.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+        self.chat_log.config(state="disabled")
+        
+        chat_scroll = tk.Scrollbar(chat_card, orient="vertical", command=self.chat_log.yview)
+        chat_scroll.pack(side="right", fill="y", padx=(0, 5), pady=5)
+        self.chat_log.config(yscrollcommand=chat_scroll.set)
+        
+        # Configure text tags
+        self.chat_log.tag_config("user", foreground="#0A84FF", font=("SF Pro Text", 9, "bold"))
+        self.chat_log.tag_config("claw", foreground="#E2E8F0", font=("SF Pro Text", 9))
+        self.chat_log.tag_config("system", foreground="#FF9F0A", font=("SF Pro Text", 9, "italic"))
+        
+        # Welcome message
+        self.append_chat_log("OpenClaw", "Welcome to OpenClaw Chat Assistant! Powered by local gemma2:2b via Ollama. Ask me anything or instruct me to search the internet.", "claw")
+        
+        chat_input_frame = tk.Frame(tab_chat, bg="#1A1A1E")
+        chat_input_frame.pack(fill="x", padx=15, pady=(5, 15))
+        
+        self.chat_input = tk.Entry(chat_input_frame, bg="#16161D", fg="#FFFFFF", insertbackground="#FFFFFF", font=("SF Pro Text", 10), bd=0, highlightthickness=1, highlightbackground="#3E3E4C", highlightcolor="#0A84FF")
+        self.chat_input.pack(side="left", fill="x", expand=True, ipady=4)
+        self.chat_input.bind("<Return>", lambda e: self.send_chat_message())
+        
+        self.send_btn = PillButton(chat_input_frame, "Send", self.send_chat_message, bg_color="#0A84FF", active_color="#0066CC", width=60, height=28, font=("SF Pro Text", 8, "bold"))
+        self.send_btn.pack(side="right", padx=(10, 0))
+
+    def append_chat_log(self, sender, text, tag):
+        self.chat_log.config(state="normal")
+        self.chat_log.insert(tk.END, f"{sender}: ", tag)
+        self.chat_log.insert(tk.END, f"{text}\n\n")
+        self.chat_log.see(tk.END)
+        self.chat_log.config(state="disabled")
+
+    def remove_last_chat_line(self):
+        try:
+            self.chat_log.config(state="normal")
+            self.chat_log.delete("end - 3 lines", "end")
+            self.chat_log.insert(tk.END, "\n")
+            self.chat_log.config(state="disabled")
+        except Exception:
+            pass
+
+    def send_chat_message(self):
+        query = self.chat_input.get().strip()
+        if not query:
+            return
+            
+        self.chat_input.delete(0, tk.END)
+        
+        self.append_chat_log("You", query, "user")
+        
+        threading.Thread(target=self.process_chat_query, args=(query,), daemon=True).start()
+
+    def process_chat_query(self, query):
+        if not hasattr(self, "chat_history"):
+            self.chat_history = []
+            
+        self.chat_history.append({"role": "user", "content": query})
+        
+        allow_search = self.search_var.get()
+        system_prompt = OPENCLAW_SYSTEM_PROMPT if allow_search else "You are OpenClaw, a premium local AI desktop assistant."
+        
+        messages = [{"role": "system", "content": system_prompt}] + self.chat_history
+        
+        self.append_chat_log("System", "Thinking...", "system")
+        
+        response = call_ollama("gemma2:2b", messages)
+        self.remove_last_chat_line()
+        
+        if allow_search and "[SEARCH:" in response:
+            try:
+                search_query = response.split("[SEARCH:")[1].split("]")[0].strip()
+                self.append_chat_log("System", f"Searching DuckDuckGo for: '{search_query}'...", "system")
+                
+                search_results = search_duckduckgo(search_query)
+                self.remove_last_chat_line()
+                
+                self.append_chat_log("System", "Analyzing search results...", "system")
+                
+                messages.append({"role": "assistant", "content": response})
+                messages.append({"role": "system", "content": f"DuckDuckGo Search Results:\n{search_results}"})
+                
+                response = call_ollama("gemma2:2b", messages)
+                self.remove_last_chat_line()
+            except Exception as e:
+                response = f"Search extraction error: {e}. Raw response: {response}"
+                
+        self.chat_history.append({"role": "assistant", "content": response})
+        if len(self.chat_history) > 30:
+            self.chat_history = self.chat_history[-30:]
+            
+        self.append_chat_log("OpenClaw", response, "claw")
 
     def append_log(self, msg):
         self.console.config(state="normal")
@@ -1041,15 +1244,23 @@ def main():
         log(f"Searching for target window matching pattern: '{args.target}'")
         win_list = scan_visible_windows()
         found = False
+        
+        # Expand abbreviation pattern if present
+        patterns_to_check = [target_pattern]
+        for key, mappings in ABBREVIATION_MAP.items():
+            if target_pattern == key.lower():
+                patterns_to_check.extend([m.lower() for m in mappings])
+                break
+                
         for hwnd, title in win_list:
-            if target_pattern in title.lower():
+            if any(pat in title.lower() for pat in patterns_to_check):
                 target_hwnd = hwnd
                 target_window_title = title
                 found = True
-                log(f"Auto-selected window from CLI target pattern: '{title}' (HWND: {hwnd})")
+                log(f"Auto-selected window matching pattern '{args.target}': '{title}' (HWND: {hwnd})")
                 break
         if not found:
-            log(f"Warning: No window matching pattern '{args.target}' found.")
+            log(f"Warning: No window matching pattern '{args.target}' (expanded: {patterns_to_check}) found.")
             
     if args.autostart:
         loop_active = True

@@ -2,7 +2,7 @@
 """
 Task Tray Resident Autonomous OS Agent Manager
 Features pystray tray icon, Tkinter visual memory manager, and custom snipping overlay.
-Enhanced with implicit self-learning: auto-crops failed click areas on stuck screens.
+Enhanced with background Win32 message input injection & window-specific frame capturing.
 """
 
 import os
@@ -11,11 +11,13 @@ import json
 import time
 import threading
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import ttk, messagebox
 from PIL import Image, ImageDraw, ImageTk
 import pyautogui
 import pystray
 from pystray import Menu, MenuItem
+import ctypes
+import ctypes.wintypes
 
 # Reconfigure stdout/stderr to UTF-8
 try:
@@ -37,10 +39,21 @@ loop_active = False
 active_brain = "research_brain"
 running = True
 
+# Background mode states
+background_mode = False
+target_hwnd = None
+target_window_title = "None"
+
 # Track UI instances and last click targets
 active_ui_instance = None
 last_click_coord = (480, 320)
 mock_stuck_simulation = True  # Simulates static screen to trigger auto-crop
+
+# Win32 Constants
+WM_LBUTTONDOWN = 0x0201
+WM_LBUTTONUP = 0x0202
+WM_KEYDOWN = 0x0100
+WM_KEYUP = 0x0101
 
 def log(msg):
     print(f"[Tray-Agent] {msg}", flush=True)
@@ -73,6 +86,80 @@ def compare_images(img1, img2):
     similarity = 1.0 - (diffs / max_diff)
     return similarity
 
+def scan_visible_windows():
+    """Scans running applications for user-interactive visible windows."""
+    windows = []
+    
+    WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM)
+    
+    def enum_win_proc(hwnd, lparam):
+        if ctypes.windll.user32.IsWindowVisible(hwnd):
+            length = ctypes.windll.user32.GetWindowTextLengthW(hwnd)
+            if length > 0:
+                buff = ctypes.create_unicode_buffer(length + 1)
+                ctypes.windll.user32.GetWindowTextW(hwnd, buff, length + 1)
+                title = buff.value
+                
+                # Check window class name to filter system containers
+                class_len = 256
+                class_buff = ctypes.create_unicode_buffer(class_len)
+                ctypes.windll.user32.GetClassNameW(hwnd, class_buff, class_len)
+                class_name = class_buff.value
+                
+                # Filters
+                ignore_titles = ["settings", "overlay", "nvidia", "microsoft", "task host", "input indicator"]
+                if not any(k in title.lower() for k in ignore_titles) and class_name not in ["Windows.UI.Core.CoreWindow", "ApplicationFrameWindow"]:
+                    windows.append((hwnd, title))
+        return True
+        
+    ctypes.windll.user32.EnumWindows(WNDENUMPROC(enum_win_proc), 0)
+    return windows
+
+def capture_window(hwnd):
+    """Captures a screenshot of a specific window handle, even if covered by other windows."""
+    rect = ctypes.wintypes.RECT()
+    ctypes.windll.user32.GetClientRect(hwnd, ctypes.byref(rect))
+    width = rect.right - rect.left
+    height = rect.bottom - rect.top
+    
+    if width <= 0 or height <= 0:
+        return pyautogui.screenshot()
+        
+    hwndDC = ctypes.windll.user32.GetDC(hwnd)
+    mfcDC = ctypes.windll.gdi32.CreateCompatibleDC(hwndDC)
+    saveBitMap = ctypes.windll.gdi32.CreateCompatibleBitmap(hwndDC, width, height)
+    ctypes.windll.gdi32.SelectObject(mfcDC, saveBitMap)
+    
+    # TryPWPWPW:PW_RENDERFULLCONTENT (PW_CLIENTONLY is 1, default PW_RENDERFULLCONTENT is 2)
+    result = ctypes.windll.user32.PrintWindow(hwnd, mfcDC, 2)
+    if not result:
+        # Fallback to standard BitBlt
+        ctypes.windll.gdi32.BitBlt(mfcDC, 0, 0, width, height, hwndDC, 0, 0, 0x00CC0020)
+        
+    bmpinfo = ctypes.wintypes.BITMAP()
+    ctypes.windll.gdi32.GetObjectW(saveBitMap, ctypes.sizeof(bmpinfo), ctypes.byref(bmpinfo))
+    
+    bmpstr = ctypes.create_string_buffer(width * height * 4)
+    ctypes.windll.gdi32.GetBitmapBits(saveBitMap, width * height * 4, bmpstr)
+    
+    img = Image.frombuffer("RGBA", (width, height), bmpstr, "raw", "BGRA", 0, 1)
+    
+    # Cleanup
+    ctypes.windll.gdi32.DeleteObject(saveBitMap)
+    ctypes.windll.gdi32.DeleteDC(mfcDC)
+    ctypes.windll.user32.ReleaseDC(hwnd, hwndDC)
+    
+    return img.convert("RGB")
+
+def send_background_click(hwnd, x, y):
+    """Sends mouse click messages directly into the target window's queue."""
+    if not hwnd or not ctypes.windll.user32.IsWindow(hwnd):
+        return
+    lParam = (y << 16) | (x & 0xFFFF)
+    ctypes.windll.user32.PostMessageW(hwnd, WM_LBUTTONDOWN, 1, lParam)
+    time.sleep(0.05)
+    ctypes.windll.user32.PostMessageW(hwnd, WM_LBUTTONUP, 0, lParam)
+
 def trigger_ui_refresh():
     """Triggers listbox refresh thread-safely on the UI thread."""
     global active_ui_instance
@@ -84,31 +171,36 @@ def trigger_ui_refresh():
 
 # --- Background Worker ---
 def autonomous_loop():
-    """Background worker thread simulating closed-loop agent operations with stuck auto-capture."""
+    """Background worker thread executing mock operations via background messages if enabled."""
     global loop_active, running, active_brain, last_click_coord, mock_stuck_simulation
+    global background_mode, target_hwnd, target_window_title
     log("Background autonomous worker thread started.")
     
     previous_screenshot = None
     
     while running:
         if loop_active:
-            # 1. Capture current screen state
-            current_screenshot = pyautogui.screenshot()
-            
+            # 1. Capture target screen context
+            if background_mode and target_hwnd and ctypes.windll.user32.IsWindow(target_hwnd):
+                current_screenshot = capture_window(target_hwnd)
+                target_desc = f"Window '{target_window_title}' (HWND: {target_hwnd})"
+            else:
+                current_screenshot = pyautogui.screenshot()
+                target_desc = "Primary Desktop Screen (Foreground)"
+                
             # 2. Check for stuck state (no visual change after click)
             if previous_screenshot is not None:
-                # If mock stuck simulation is active, simulate similarity = 1.0
                 if mock_stuck_simulation:
                     sim = 1.0
-                    mock_stuck_simulation = False  # Trigger once per activation
+                    mock_stuck_simulation = False  # trigger once
                 else:
                     sim = compare_images(current_screenshot, previous_screenshot)
                 
-                log(f"Screen state similarity check: {sim:.2%}")
+                log(f"Screen state similarity check: {sim:.2%} on {target_desc}")
                 
                 if sim > 0.99:
-                    log("⚠️ [Stuck Detected] Visual verification failed! The clicked area caused no screen state change.")
-                    # Crop a 100x100 box around the last clicked coordinates
+                    log("⚠️ [Stuck Detected] Visual verification failed! Screen remained unchanged.")
+                    # Crop 100x100 around click target
                     cx, cy = last_click_coord
                     sw, sh = current_screenshot.size
                     
@@ -125,12 +217,11 @@ def autonomous_loop():
                         
                         try:
                             cropped.save(target_path)
-                            log(f"🧠 [Implicit Auto-Learning] Saved failed region visual memory: {filename}")
+                            log(f"🧠 [Implicit Auto-Learning] Saved struggle region template: {filename}")
                             trigger_ui_refresh()
                         except Exception as e:
                             log(f"Failed to auto-save struggle crop: {e}")
             
-            # Save current screenshot as previous for next cycle
             previous_screenshot = current_screenshot
             
             # 3. Load active brain config
@@ -152,17 +243,25 @@ def autonomous_loop():
             # Scan memories
             templates = [f.replace(".png", "") for f in os.listdir(MEMORIES_DIR) if f.endswith(".png")]
             if templates:
-                log(f"Scanning screen for visual template memories: {templates}")
-                # Mock detection: match the first memory
                 target = templates[0]
-                # Let's say we click at (480, 320)
-                last_click_coord = (480, 320)
-                log(f"[Brain-Reasoning] Detected active window. Scanning for matching visual asset '{target}'...")
-                log(f"[Brain-Reasoning] cv2.matchTemplate matched '{target}' at coordinate {last_click_coord} with confidence 0.96.")
-                log(f"[Action] Dispatched MATCH_CLICK on visual memory key '{target}' -> coordinate {last_click_coord} executed.")
+                last_click_coord = (240, 180)
+                log(f"[Brain-Reasoning] Scanning target screen for matching visual template '{target}'...")
+                log(f"[Brain-Reasoning] matched '{target}' at coordinate {last_click_coord} with confidence 0.94.")
+                
+                # Execute action (foreground vs background)
+                if background_mode and target_hwnd and ctypes.windll.user32.IsWindow(target_hwnd):
+                    log(f"[Action] Dispatching BACKGROUND MATCH_CLICK to {target_desc} at client coordinate {last_click_coord}")
+                    send_background_click(target_hwnd, last_click_coord[0], last_click_coord[1])
+                else:
+                    log(f"[Action] Dispatching PHYSICAL FOREGROUND MATCH_CLICK at coordinate {last_click_coord}")
+                    # In mock mode we just print to avoid moving user's mouse physically
             else:
-                last_click_coord = (520, 240)
-                log("No visual template memories registered in visual_memories/. Executing mock OCR click at (520, 240)...")
+                last_click_coord = (300, 200)
+                if background_mode and target_hwnd and ctypes.windll.user32.IsWindow(target_hwnd):
+                    log(f"[Action] Dispatching BACKGROUND OCR_CLICK to {target_desc} at client coordinate {last_click_coord}")
+                    send_background_click(target_hwnd, last_click_coord[0], last_click_coord[1])
+                else:
+                    log(f"No templates registered. Dispatching mock foreground click at {last_click_coord}")
                 
             time.sleep(4.0)
         else:
@@ -175,32 +274,26 @@ class SnippingTool:
         self.parent_win = parent_win
         self.on_save_callback = on_save_callback
         
-        # Hide parent window
         self.parent_win.withdraw()
-        time.sleep(0.3)  # Allow parent window to fade out
+        time.sleep(0.3)
         
-        # Take full screen capture
         self.screenshot = pyautogui.screenshot()
         
-        # Overlay full-screen borderless window
         self.overlay = tk.Toplevel()
         self.overlay.attributes("-fullscreen", True)
         self.overlay.attributes("-topmost", True)
         self.overlay.config(cursor="cross")
         
-        # Convert screenshot to TkPhoto
         self.tk_image = ImageTk.PhotoImage(self.screenshot)
         
         self.canvas = tk.Canvas(self.overlay, cursor="cross", bg="#000000", highlightthickness=0)
         self.canvas.pack(fill="both", expand=True)
         self.canvas.create_image(0, 0, image=self.tk_image, anchor="nw")
         
-        # Selection state
         self.rect_id = None
         self.start_x = 0
         self.start_y = 0
         
-        # Bind events
         self.canvas.bind("<ButtonPress-1>", self.on_press)
         self.canvas.bind("<B1-Motion>", self.on_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_release)
@@ -240,8 +333,8 @@ class MemoryManagerUI:
         self.root = root
         active_ui_instance = self
         
-        self.root.title("Visual Memory Manager")
-        self.root.geometry("520x450")
+        self.root.title("Visual Memory Manager & Grind Console")
+        self.root.geometry("560x580")
         self.root.configure(bg="#121216")
         self.root.resizable(False, False)
         
@@ -250,6 +343,7 @@ class MemoryManagerUI:
         
         self.build_widgets()
         self.refresh_list()
+        self.refresh_windows_list()
         
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
         
@@ -289,7 +383,7 @@ class MemoryManagerUI:
 
         # Main List frame
         list_frame = tk.Frame(self.root, bg="#1C1C24", bd=1, relief="flat", highlightbackground="#2C2C3A", highlightthickness=1)
-        list_frame.pack(fill="both", expand=True, padx=20, pady=(0, 15))
+        list_frame.pack(fill="both", expand=True, padx=20, pady=(0, 10))
         
         self.listbox = tk.Listbox(
             list_frame,
@@ -308,58 +402,116 @@ class MemoryManagerUI:
         scrollbar.pack(side="right", fill="y", padx=(0, 5), pady=5)
         self.listbox.config(yscrollcommand=scrollbar.set)
         
-        # Control Buttons Frame
-        btn_frame = tk.Frame(self.root, bg="#121216")
-        btn_frame.pack(fill="x", padx=20, pady=(0, 20))
+        # Control Buttons Frame for template management
+        tpl_btn_frame = tk.Frame(self.root, bg="#121216")
+        tpl_btn_frame.pack(fill="x", padx=20, pady=(0, 10))
         
         self.add_btn = tk.Button(
-            btn_frame, 
+            tpl_btn_frame, 
             text="Register New Image (Snipping Tool)", 
             font=("SF Pro Text", 9, "bold"), 
             bg="#A259FF", 
             fg="#FFFFFF", 
-            activebackground="#8E44AD", 
-            activeforeground="#FFFFFF",
             bd=0, 
-            padx=12, 
-            pady=6, 
+            padx=10, 
+            pady=5, 
             command=self.start_snipping
         )
         self.add_btn.pack(side="left")
         
         self.del_btn = tk.Button(
-            btn_frame, 
+            tpl_btn_frame, 
             text="Delete Selected", 
             font=("SF Pro Text", 9, "bold"), 
             bg="#FF1744", 
             fg="#FFFFFF", 
-            activebackground="#D50000", 
-            activeforeground="#FFFFFF",
             bd=0, 
-            padx=12, 
-            pady=6, 
+            padx=10, 
+            pady=5, 
             command=self.delete_memory
         )
         self.del_btn.pack(side="right")
         
+        # Separator line
+        sep = tk.Frame(self.root, height=1, bg="#2C2C3A")
+        sep.pack(fill="x", padx=20, pady=10)
+
+        # Background automation / Grind settings frame
+        grind_frame = tk.LabelFrame(
+            self.root, 
+            text="Background Grinding & PS Remote Play Controller", 
+            font=("SF Pro Text", 9, "bold"),
+            fg="#00E5FF", 
+            bg="#121216", 
+            bd=1, 
+            relief="flat", 
+            highlightbackground="#2C2C3A", 
+            highlightthickness=1
+        )
+        grind_frame.pack(fill="x", padx=20, pady=(0, 15), ipady=10)
+        
+        # Background mode checkbox
+        self.bg_mode_var = tk.BooleanVar(value=background_mode)
+        self.bg_mode_cb = tk.Checkbutton(
+            grind_frame,
+            text="Enable Background Automation (Win32 API)",
+            variable=self.bg_mode_var,
+            font=("SF Pro Text", 9, "bold"),
+            fg="#FFFFFF",
+            bg="#121216",
+            activebackground="#121216",
+            activeforeground="#FFFFFF",
+            selectcolor="#0D0D11",
+            bd=0,
+            command=self.on_bg_toggle
+        )
+        self.bg_mode_cb.pack(anchor="w", padx=15, pady=5)
+        
+        # Target Window Selection Row
+        win_select_frame = tk.Frame(grind_frame, bg="#121216")
+        win_select_frame.pack(fill="x", padx=15, pady=5)
+        
+        win_lbl = tk.Label(win_select_frame, text="Target Window:", font=("SF Pro Text", 9), fg="#8A8A9E", bg="#121216")
+        win_lbl.pack(side="left")
+        
+        self.win_dropdown = ttk.Combobox(win_select_frame, state="readonly", width=42)
+        self.win_dropdown.pack(side="left", padx=10)
+        self.win_dropdown.bind("<<ComboboxSelected>>", self.on_window_select)
+        
+        self.refresh_win_btn = tk.Button(
+            win_select_frame, 
+            text="Scan", 
+            font=("SF Pro Text", 8, "bold"), 
+            bg="#2C2C3A", 
+            fg="#E2E8F0", 
+            bd=0, 
+            padx=8, 
+            pady=3, 
+            command=self.refresh_windows_list
+        )
+        self.refresh_win_btn.pack(side="left")
+        
+        # Close Button Frame
+        bottom_frame = tk.Frame(self.root, bg="#121216")
+        bottom_frame.pack(fill="x", padx=20, pady=(0, 15))
+        
         self.close_btn = tk.Button(
-            btn_frame, 
-            text="Close", 
+            bottom_frame, 
+            text="Close Console", 
             font=("SF Pro Text", 9, "bold"), 
             bg="#2C2C3A", 
             fg="#E2E8F0", 
-            activebackground="#1C1C24", 
-            activeforeground="#FFFFFF",
             bd=0, 
             padx=12, 
             pady=6, 
             command=self.on_close
         )
-        self.close_btn.pack(side="right", padx=10)
+        self.close_btn.pack(side="right")
         
-        # Hover transitions
+        # Styling hover effects
         self.bind_btn_hover(self.add_btn, "#A259FF", "#B370FF")
         self.bind_btn_hover(self.del_btn, "#FF1744", "#FF4D6A")
+        self.bind_btn_hover(self.refresh_win_btn, "#2C2C3A", "#3D3D4E")
         self.bind_btn_hover(self.close_btn, "#2C2C3A", "#3D3D4E")
 
     def bind_btn_hover(self, button, normal_bg, active_bg):
@@ -382,6 +534,55 @@ class MemoryManagerUI:
             self.del_btn.config(state="normal")
             for f in sorted(files):
                 self.listbox.insert(tk.END, f"  {f.replace('.png', '')}")
+
+    def refresh_windows_list(self):
+        """Scans active windows and repopulates the dropdown selection list."""
+        self.win_list = scan_visible_windows()
+        titles = [f"{title} (HWND: {hwnd})" for hwnd, title in self.win_list]
+        self.win_dropdown["values"] = titles
+        
+        # Attempt to auto-select current active window handle if it still exists
+        global target_hwnd, target_window_title
+        found = False
+        if target_hwnd:
+            for idx, (hwnd, title) in enumerate(self.win_list):
+                if hwnd == target_hwnd:
+                    self.win_dropdown.current(idx)
+                    found = True
+                    break
+        
+        if not found:
+            # Fallback: scan for Remote Play or Chiaki or Spire
+            for idx, (hwnd, title) in enumerate(self.win_list):
+                if any(k in title.lower() for k in ["remote play", "chiaki", "spire 2"]):
+                    self.win_dropdown.current(idx)
+                    target_hwnd = hwnd
+                    target_window_title = title
+                    found = True
+                    log(f"Auto-selected game/remote play window: '{title}'")
+                    break
+                    
+        if not found and titles:
+            self.win_dropdown.set("Select target background window...")
+            
+    def on_window_select(self, event):
+        global target_hwnd, target_window_title
+        idx = self.win_dropdown.current()
+        if idx >= 0:
+            target_hwnd, target_window_title = self.win_list[idx]
+            log(f"Target background window set to: '{target_window_title}' (HWND: {target_hwnd})")
+
+    def on_bg_toggle(self):
+        global background_mode
+        background_mode = self.bg_mode_var.get()
+        log(f"Background automation mode set to: {background_mode}")
+        if background_mode and not target_hwnd:
+            messagebox.showwarning(
+                "Warning", 
+                "Background mode enabled, but no target window has been selected.\n"
+                "Please scan and select a target window to send background inputs.",
+                parent=self.root
+            )
 
     def start_snipping(self):
         SnippingTool(self.root, self.save_snipped_image)
